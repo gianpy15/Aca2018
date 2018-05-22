@@ -12,4 +12,5 @@ include_directories(/usr/local/include)
 
 
 add_executable(Aca2018 source/main.cpp)
+add_executable(Intel source/from_intel_example.cpp)
 add_executable(Tests source/tests/test_mkl_dnn.cpp)
