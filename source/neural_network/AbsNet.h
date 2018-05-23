@@ -32,7 +32,7 @@ protected:
     memory::dims input_tz;
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
-    memory last_output = memory(mkldnn::primitive());
+    memory * last_output = new memory(mkldnn::primitive());
     memory::dims last_output_shape;
     engine cpu_engine = engine(engine::cpu, 0);
 

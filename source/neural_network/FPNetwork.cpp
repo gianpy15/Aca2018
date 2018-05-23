@@ -13,7 +13,7 @@ FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
             input_size.begin(), input_size.end(), 1,
             std::multiplies<uint32_t>()));
     auto user_src_memory
-            = memory({ { { input_size }, memory::data_type::f32,
+            = new memory({ { { input_size }, memory::data_type::f32,
                          memory::format::nchw },
                        cpu_engine },
                      user_src.data());
@@ -89,13 +89,13 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
 
     /* create memory for user data */
     auto conv_user_weights_memory
-            = memory({ { { conv_weights_tz }, memory::data_type::f32,
+            = new memory({ { { conv_weights_tz }, memory::data_type::f32,
                          memory::format::oihw },
                        cpu_engine },
                      conv_weights.data());
 
     auto conv_user_bias_memory
-            = memory({ { { conv_bias_tz }, memory::data_type::f32,
+            = new memory({ { { conv_bias_tz }, memory::data_type::f32,
                          memory::format::x },
                        cpu_engine },
                      conv_bias.data());
@@ -121,34 +121,36 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
             conv_weights_md, conv_bias_md, conv_dst_md, conv_strides,
             padding, padding, padding_kind::zero);
     auto conv_prim_desc
-            = convolution_forward::primitive_desc(conv_desc, cpu_engine);
+            = new convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
     std::cout << "CONV CHECKPOINT 2" << std::endl;
 
     auto conv_src_memory = last_output;
-    if (memory::primitive_desc(conv_prim_desc.src_primitive_desc())
-        != conv_src_memory.get_primitive_desc()) {
-        conv_src_memory = memory(conv_prim_desc.src_primitive_desc());
-        net.push_back(reorder(last_output, conv_src_memory));
+    if (memory::primitive_desc(conv_prim_desc->src_primitive_desc())
+        != conv_src_memory->get_primitive_desc()) {
+        std::cout << "Reordering source memory" << std::endl;
+        conv_src_memory = new memory(conv_prim_desc->src_primitive_desc());
+        net.push_back(reorder(*last_output, *conv_src_memory));
     }
 
     auto conv_weights_memory = conv_user_weights_memory;
-    if (memory::primitive_desc(conv_prim_desc.weights_primitive_desc())
-        != conv_user_weights_memory.get_primitive_desc()) {
+    if (memory::primitive_desc(conv_prim_desc->weights_primitive_desc())
+        != conv_user_weights_memory->get_primitive_desc()) {
+        std::cout << "Reordering weights memory" << std::endl;
         conv_weights_memory
-                = memory(conv_prim_desc.weights_primitive_desc());
+                = new memory(conv_prim_desc->weights_primitive_desc());
         net_weights.push_back(
-                reorder(conv_user_weights_memory, conv_weights_memory));
+                reorder(*conv_user_weights_memory, *conv_weights_memory));
     }
 
     std::cout << "CONV CHECKPOINT 3" << std::endl;
 
-    auto conv_dst_memory = memory(conv_prim_desc.dst_primitive_desc());
+    auto conv_dst_memory = new memory(conv_prim_desc->dst_primitive_desc());
 
     /* create convolution primitive and add it to net */
-    net.push_back(convolution_forward(conv_prim_desc, conv_src_memory,
-                                      conv_weights_memory, conv_user_bias_memory,
-                                      conv_dst_memory));
+    net.push_back(convolution_forward(*conv_prim_desc, *conv_src_memory,
+                                      *conv_weights_memory, *conv_user_bias_memory,
+                                      *conv_dst_memory));
 
     std::cout << "CONV CHECKPOINT 4" << std::endl;
 
@@ -158,15 +160,15 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     const float negative2_slope = 1.0f;
 
     /* create relu primitive and add it to net */
-    auto relu2_desc = eltwise_forward::desc(prop_kind::forward_inference,
+    auto relu2_desc = new eltwise_forward::desc(prop_kind::forward_inference,
                                             algorithm::eltwise_relu,
-                                            conv_dst_memory.get_primitive_desc().desc(), negative2_slope);
+                                            conv_dst_memory->get_primitive_desc().desc(), negative2_slope);
     auto relu2_prim_desc
-            = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
+            = new eltwise_forward::primitive_desc(*relu2_desc, cpu_engine);
 
     std::cout << "CONV CHECKPOINT 5" << std::endl;
 
-    net.push_back(eltwise_forward(relu2_prim_desc, conv_dst_memory, conv_dst_memory));
+    net.push_back(eltwise_forward(*relu2_prim_desc, *conv_dst_memory, *conv_dst_memory));
 
     last_output = conv_dst_memory;
     last_output_shape = conv_dst_tz;
