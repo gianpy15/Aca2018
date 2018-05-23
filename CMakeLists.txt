@@ -3,7 +3,7 @@ project(Aca2018)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(Aca2018 source/main.cpp)
+add_executable(Aca2018 source/main.cpp source/neural_network)
 add_executable(Intel source/from_intel_example.cpp)
 add_executable(Tests source/tests/test_mkl_dnn.cpp)
 
