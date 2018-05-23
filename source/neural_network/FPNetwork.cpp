@@ -57,7 +57,13 @@ AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const in
         padding_tz = {0, 0};
     }
     std::cout << "Initialized conv dimensions" << std::endl;
-    createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
+    try {
+        createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
+    } catch (error &e) {
+        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "message: " << e.message << std::endl;
+        throw;
+    }
 
     return this;
 }
@@ -84,9 +90,10 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     /* create memory for user data */
     auto conv_user_weights_memory
             = memory({ { { conv_weights_tz }, memory::data_type::f32,
-                         memory::format::goihw },
+                         memory::format::oihw },
                        cpu_engine },
                      conv_weights.data());
+
     auto conv_user_bias_memory
             = memory({ { { conv_bias_tz }, memory::data_type::f32,
                          memory::format::x },

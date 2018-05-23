@@ -3,12 +3,14 @@
 
 int main() {
     std::cout << "Hello, World!" << std::endl;
-    FPNetwork *net = new FPNetwork({1, 3, 220, 220});
+    FPNetwork *net = new FPNetwork({1, 3, 227, 227});
     std::cout << "Network initialized" << std::endl;
     int kernel_5x5[] = {5, 5};
     int kernel_3x3[] = {3, 3};
+    int kernel_11x11[] = {11, 11};
     int no_stride[] = {1, 1};
-    net->addConv2D(20, kernel_5x5, no_stride, Padding::SAME);
+    int four_stride[] = {4, 4};
+    net->addConv2D(96, kernel_11x11, four_stride, Padding::VALID);
     std::cout << "Added first convolution" << std::endl;
     net->addConv2D(50, kernel_3x3, no_stride, Padding::SAME);
     std::cout << "Added second convolution" << std::endl;
