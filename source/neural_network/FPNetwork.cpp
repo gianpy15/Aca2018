@@ -31,8 +31,8 @@ AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const in
     memory::dims conv_weights_tz = { channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
     memory::dims conv_strides = { strides[0], strides[1] };
-    auto out_shape;
-    auto padding_tz;
+    memory::dims out_shape;
+    memory::dims padding_tz;
     if (padding == Padding::SAME){
         out_shape = {in_shape[0],
                      channels_out,

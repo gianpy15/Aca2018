@@ -17,23 +17,24 @@ using namespace mkldnn;
  *       in case of stride [1, 1]
  * VALID: will not apply any zero padding to the input
  */
-enum Padding { SAME = 'same', VALID = 'valid' };
+enum Padding { SAME = 's', VALID = 'v' };
 
 
 class AbsNet {
 public:
+    AbsNet(const memory::dims &input_size);
+
     virtual AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding)= 0;
-
-
-    virtual AbsNet(memory::dims input_size)= 0;
+    void run_net();
+    void setup_net();
 
 protected:
     memory::dims input_tz;
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
-    memory last_output;
+    memory last_output = memory(mkldnn::primitive());
     memory::dims last_output_shape;
-    auto cpu_engine = engine(engine::cpu, 0);
+    engine cpu_engine = engine(engine::cpu, 0);
 
     /**
      * This method will be called from addConv2D and adds a convolution layer to the network

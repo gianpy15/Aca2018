@@ -8,10 +8,11 @@
 #include "AbsNet.h"
 
 
-class FPNetwork: AbsNet {
+class FPNetwork: public AbsNet {
 public:
     FPNetwork(const memory::dims &input_size);
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) override;
+
 private:
     void createConv2D(memory::dims conv_src_tz,
                       memory::dims conv_weights_tz,
