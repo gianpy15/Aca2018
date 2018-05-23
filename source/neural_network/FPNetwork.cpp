@@ -2,6 +2,8 @@
 // Created by gianpaolo on 5/23/18.
 //
 
+#include <numeric>
+#include <cmath>
 #include "FPNetwork.h"
 
 FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
@@ -18,7 +20,7 @@ FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
 }
 
 AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
-    memory::dims in_shape = {0, 0, 0, 0};// last_output.get_primitive_desc().desc(); //TODO farlo
+    memory::dims in_shape = last_output_shape;
 
     /**
      * Channels_out: the number of channels outputs by the convolution
@@ -32,11 +34,17 @@ AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const in
     auto out_shape;
     auto padding_tz;
     if (padding == Padding::SAME){
-        out_shape = {in_shape[0], channels_out, in_shape[2] };
+        out_shape = {in_shape[0],
+                     channels_out,
+                     in_shape[2]/strides[0],
+                     in_shape[3]/strides[1]};
         padding_tz = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
     } else {
-        out_shape;
-        padding_tz;
+        out_shape = {in_shape[0],
+                     channels_out,
+                     ceil((in_shape[2]-kernel_size[0]+1)/(float)strides[0]),
+                     ceil((in_shape[3]-kernel_size[1]+1)/(float)strides[1])};
+        padding_tz = {0, 0};
     }
 
     createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
@@ -131,4 +139,5 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     net.push_back(eltwise_forward(relu2_prim_desc, conv_dst_memory, conv_dst_memory));
 
     last_output = conv_dst_memory;
+    last_output_shape = conv_dst_tz;
 }

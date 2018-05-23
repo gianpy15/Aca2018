@@ -8,7 +8,7 @@
 #include <string>
 #include "mkldnn.hpp"
 
-using namespace mkldnn
+using namespace mkldnn;
 
 /**
  * enumeration used for identifying different types of padding
@@ -32,6 +32,7 @@ protected:
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
     memory last_output;
+    memory::dims last_output_shape;
     auto cpu_engine = engine(engine::cpu, 0);
 
     /**
