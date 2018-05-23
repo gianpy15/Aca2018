@@ -128,6 +128,7 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     auto conv_src_memory = last_output;
     if (memory::primitive_desc(conv_prim_desc.src_primitive_desc())
         != conv_src_memory.get_primitive_desc()) {
+        std::cout << "Reordering source memory" << std::endl;
         conv_src_memory = memory(conv_prim_desc.src_primitive_desc());
         net.push_back(reorder(last_output, conv_src_memory));
     }
@@ -135,6 +136,7 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     auto conv_weights_memory = conv_user_weights_memory;
     if (memory::primitive_desc(conv_prim_desc.weights_primitive_desc())
         != conv_user_weights_memory.get_primitive_desc()) {
+        std::cout << "Reordering weights memory" << std::endl;
         conv_weights_memory
                 = memory(conv_prim_desc.weights_primitive_desc());
         net_weights.push_back(
