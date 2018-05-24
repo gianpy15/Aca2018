@@ -103,11 +103,15 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
                            cpu_engine },
                          conv_bias->data());
 
+    temporary_memories.push_back(conv_user_bias_memory);
+    temporary_memories.push_back(conv_user_weights_memory);
+
+
     /* create memory descriptors for convolution data w/ no specified format */
     auto conv_src_md = memory::desc(
             { conv_src_tz }, memory::data_type::u8, memory::format::any);
     auto conv_bias_md = memory::desc(
-            { conv_bias_tz }, memory::data_type::s8, memory::format::any);
+            { conv_bias_tz }, memory::data_type::s32, memory::format::any);
     auto conv_weights_md = memory::desc(
             { conv_weights_tz }, memory::data_type::s8, memory::format::any);
     auto conv_dst_md = memory::desc(
@@ -205,11 +209,8 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
                                       fp_dst_memory->get_primitive_desc(), dst_attr);
 
     /* Convert the destination memory from convolution into user
-     * data format if necessary */
-    if (conv_dst_memory != fp_dst_memory) {
-        net.push_back(
-                reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory));
-    }
+     * data format */
+    net.push_back(reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory));
 
     last_output = fp_dst_memory;
     last_output_shape = conv_dst_tz;
@@ -222,4 +223,11 @@ AbsNet *INTNetwork::addPool2D(const int *kernel_size, const int *strides, Poolin
 void INTNetwork::createPool2D(memory::dims pool_out_shape, memory::dims pool_kernel, memory::dims pool_strides,
                               memory::dims pool_padding, algorithm pool_algorithm) {
 
+}
+
+void INTNetwork::setup_net(){
+    while(!temporary_memories.empty()){
+        delete temporary_memories[-1];
+        temporary_memories.pop_back();
+    }
 }
