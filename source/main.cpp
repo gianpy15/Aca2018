@@ -2,6 +2,7 @@
 #include "neural_network/FPNetwork.h"
 #include "neural_network/INTNetwork.h"
 
+
 int main() {
     std::cout << "Hello, World!" << std::endl;
     AbsNet *net = new FPNetwork({1, 3, 227, 227});
@@ -13,22 +14,24 @@ int main() {
     int four_stride[] = {4, 4};
     net->addConv2D(96, kernel_11x11, four_stride, Padding::VALID);
     std::cout << "Added first convolution" << std::endl;
-    net->addConv2D(50, kernel_3x3, no_stride, Padding::SAME);
-    std::cout << "Added second convolution" << std::endl;
+    for (int i=0; i<10; i++)
+        net->addConv2D(250, kernel_3x3, no_stride, Padding::SAME);
+    std::cout << "Added convolution pile" << std::endl;
     net->setup_net();
     std::cout << "Network setup successful!" << std::endl;
-    net->run_net(100);
+    net->run_net(10);
     std::cout << "FP Network run successful! Horay!" << std::endl;
 
     net = new INTNetwork({1, 3, 227, 227});
     std::cout << "Network initialized" << std::endl;
     net->addConv2D(96, kernel_11x11, four_stride, Padding::VALID);
     std::cout << "Added first convolution" << std::endl;
-    net->addConv2D(50, kernel_3x3, no_stride, Padding::SAME);
-    std::cout << "Added second convolution" << std::endl;
+    for (int i=0; i<10; i++)
+        net->addConv2D(250, kernel_3x3, no_stride, Padding::SAME);
+    std::cout << "Added convolution pile" << std::endl;
     net->setup_net();
     std::cout << "Network setup successful!" << std::endl;
-    net->run_net(100);
+    net->run_net(10);
     std::cout << "INT Network run successful! Horay!" << std::endl;
     return 0;
 }

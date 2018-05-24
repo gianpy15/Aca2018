@@ -9,14 +9,14 @@
 
 INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     input_tz = input_size;
-    std::vector<float> user_src(std::accumulate(
+    auto user_src = new std::vector<float>(std::accumulate(
             input_size.begin(), input_size.end(), 1,
             std::multiplies<uint32_t>()));
     auto user_src_memory
             = new memory({ { { input_size }, memory::data_type::f32,
                              memory::format::nchw },
                            cpu_engine },
-                         user_src.data());
+                         user_src->data());
     last_output = user_src_memory;
     last_output_shape = input_tz;
 }
@@ -85,9 +85,9 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     const int conv_mask = 2; // 1 << output_channel_dim
 
     /* Allocate and fill buffers for weights and bias */
-    std::vector<float> conv_weights(std::accumulate(conv_weights_tz.begin(),
+    auto conv_weights = new std::vector<float>(std::accumulate(conv_weights_tz.begin(),
                                                     conv_weights_tz.end(), 1, std::multiplies<uint32_t>()));
-    std::vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
+    auto conv_bias = new std::vector<float>(std::accumulate(conv_bias_tz.begin(),
                                                  conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
 
     /* create memory for user data */
@@ -95,13 +95,13 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
                              memory::format::oihw },
                            cpu_engine },
-                         conv_weights.data());
+                         conv_weights->data());
 
     auto conv_user_bias_memory
             = new memory({ { { conv_bias_tz }, memory::data_type::f32,
                              memory::format::x },
                            cpu_engine },
-                         conv_bias.data());
+                         conv_bias->data());
 
     /* create memory descriptors for convolution data w/ no specified format */
     auto conv_src_md = memory::desc(
@@ -156,7 +156,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto src_reorder_pd
             = reorder::primitive_desc(last_output->get_primitive_desc(),
                                       conv_src_memory->get_primitive_desc(), src_attr);
-    net.push_back(reorder(src_reorder_pd, *last_output, *conv_src_memory));
+    net.push_back(* new reorder(src_reorder_pd, *last_output, *conv_src_memory));
 
     auto conv_weights_memory = new memory(conv_prim_desc.weights_primitive_desc());
     primitive_attr weight_attr;
@@ -165,7 +165,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto weight_reorder_pd
             = reorder::primitive_desc(conv_user_weights_memory->get_primitive_desc(),
                                       conv_weights_memory->get_primitive_desc(), weight_attr);
-    net_weights.push_back(reorder(
+    net_weights.push_back(*new reorder(
             weight_reorder_pd, *conv_user_weights_memory, *conv_weights_memory));
 
     auto conv_bias_memory = new memory(conv_prim_desc.bias_primitive_desc());
@@ -175,19 +175,19 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto bias_reorder_pd
             = reorder::primitive_desc(conv_user_bias_memory->get_primitive_desc(),
                                       conv_bias_memory->get_primitive_desc(), bias_attr);
-    net_weights.push_back(reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory));
+    net_weights.push_back(*(new reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory)));
 
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 
     /* create convolution primitive and add it to net */
-    net.push_back(convolution_forward(conv_prim_desc, *conv_src_memory,
-                                      *conv_weights_memory, *conv_bias_memory, *conv_dst_memory));
+    net.push_back(*(new convolution_forward(conv_prim_desc, *conv_src_memory,
+                                      *conv_weights_memory, *conv_bias_memory, *conv_dst_memory)));
 
     /* Convert data back into fp32 and compare values with u8.
      * Note: data is unsigned since there are no negative values
      * after ReLU */
 
-    std::vector<float> fpoutput(std::accumulate(
+    auto fpoutput = new std::vector<float>(std::accumulate(
             conv_dst_tz.begin(), conv_dst_tz.end(), 1,
             std::multiplies<uint32_t>()));
 
@@ -195,7 +195,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto fp_dst_memory = new memory(
             { { { conv_dst_tz }, memory::data_type::f32, memory::format::nchw },
               cpu_engine },
-            fpoutput.data());
+            fpoutput->data());
 
     primitive_attr dst_attr;
     dst_attr.set_int_output_round_mode(round_mode::round_nearest);
@@ -207,8 +207,8 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     /* Convert the destination memory from convolution into user
      * data format if necessary */
     if (conv_dst_memory != fp_dst_memory) {
-        net.push_back(
-                reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory));
+        net.push_back(*(new
+                reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory)));
     }
 
     last_output = fp_dst_memory;
