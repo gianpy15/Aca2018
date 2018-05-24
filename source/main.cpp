@@ -9,6 +9,7 @@ int main() {
     std::cout << "Network initialized" << std::endl;
     int kernel_5x5[] = {5, 5};
     int kernel_3x3[] = {3, 3};
+    int kernel_2x2[] = {2, 2};
     int kernel_11x11[] = {11, 11};
     int no_stride[] = {1, 1};
     int four_stride[] = {4, 4};

@@ -22,7 +22,6 @@ FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
 }
 
 AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
-
     memory::dims in_shape = last_output_shape;
 
     /**
@@ -61,17 +60,8 @@ AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const in
     return this;
 }
 
-void FPNetwork::createConv2D(memory::dims conv_src_tz,
-                             memory::dims conv_weights_tz,
-                             memory::dims conv_bias_tz,
-                             memory::dims conv_strides,
-                             memory::dims conv_dst_tz,
-                             memory::dims padding) {
-
-    /* AlexNet: conv
-    * {batch, 96, 27, 27} (x) {2, 128, 48, 5, 5} -> {batch, 256, 27, 27}
-    * strides: {1, 1}
-    */
+void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
+                             memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
 
     auto conv_weights = new std::vector<float>(std::accumulate(
             conv_weights_tz.begin(), conv_weights_tz.end(), 1,
@@ -109,32 +99,32 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
             conv_weights_md, conv_bias_md, conv_dst_md, conv_strides,
             padding, padding, padding_kind::zero);
     auto conv_prim_desc
-            = new convolution_forward::primitive_desc(conv_desc, cpu_engine);
+            = convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
     auto conv_src_memory = last_output;
-    if (memory::primitive_desc(conv_prim_desc->src_primitive_desc())
+    if (memory::primitive_desc(conv_prim_desc.src_primitive_desc())
         != conv_src_memory->get_primitive_desc()) {
         std::cout << "Reordering source memory" << std::endl;
-        conv_src_memory = new memory(conv_prim_desc->src_primitive_desc());
+        conv_src_memory = new memory(conv_prim_desc.src_primitive_desc());
         net.push_back(*(new reorder(*last_output, *conv_src_memory)));
     }
 
     auto conv_weights_memory = conv_user_weights_memory;
-    if (memory::primitive_desc(conv_prim_desc->weights_primitive_desc())
+    if (memory::primitive_desc(conv_prim_desc.weights_primitive_desc())
         != conv_user_weights_memory->get_primitive_desc()) {
         std::cout << "Reordering weights memory" << std::endl;
         conv_weights_memory
-                = new memory(conv_prim_desc->weights_primitive_desc());
-        net_weights.push_back(*( new
-                reorder(*conv_user_weights_memory, *conv_weights_memory)));
+                = new memory(conv_prim_desc.weights_primitive_desc());
+        net_weights.push_back(
+                reorder(*conv_user_weights_memory, *conv_weights_memory));
     }
 
-    auto conv_dst_memory = new memory(conv_prim_desc->dst_primitive_desc());
+    auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 
     /* create convolution primitive and add it to net */
-    net.push_back(*(new convolution_forward(*conv_prim_desc, *conv_src_memory,
+    net.push_back(convolution_forward(conv_prim_desc, *conv_src_memory,
                                       *conv_weights_memory, *conv_user_bias_memory,
-                                      *conv_dst_memory)));
+                                      *conv_dst_memory));
 
     /* AlexNet: ReLu
     * {batch, 256, 27, 27} -> {batch, 256, 27, 27}
@@ -142,14 +132,73 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz,
     const float negative2_slope = 1.0f;
 
     /* create relu primitive and add it to net */
-    auto relu2_desc = new eltwise_forward::desc(prop_kind::forward_inference,
+    auto relu2_desc = eltwise_forward::desc(prop_kind::forward_inference,
                                             algorithm::eltwise_relu,
                                             conv_dst_memory->get_primitive_desc().desc(), negative2_slope);
     auto relu2_prim_desc
-            = new eltwise_forward::primitive_desc(*relu2_desc, cpu_engine);
+            = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
 
-    net.push_back(*(new eltwise_forward(*relu2_prim_desc, *conv_dst_memory, *conv_dst_memory)));
+    net.push_back(eltwise_forward(relu2_prim_desc, *conv_dst_memory, *conv_dst_memory));
 
     last_output = conv_dst_memory;
     last_output_shape = conv_dst_tz;
 }
+
+
+AbsNet *FPNetwork::addPool2D(const int *kernel_size, const int *strides, Pooling pooling_algorithm, Padding padding) {
+    memory::dims in_shape = last_output_shape;
+    memory::dims pool_out_shape;
+    memory::dims pool_kernel = { kernel_size[0], kernel_size[1] };
+    memory::dims pool_strides = { strides[0], strides[1] };
+    memory::dims pool_padding;
+
+    algorithm pool_alg = pooling_algorithm == MAX ? algorithm::pooling_max : algorithm::pooling_avg;
+
+    if (padding == Padding::SAME){
+        pool_out_shape = {in_shape[0],
+                     in_shape[1],
+                     in_shape[2]/(strides[0] * pool_kernel[0]),
+                     in_shape[3]/(strides[1] * pool_kernel[1])},
+        pool_padding = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
+    } else {
+        pool_out_shape = {in_shape[0],
+                     in_shape[1],
+                     ceil((in_shape[2]-kernel_size[0]+1)/(float)(strides[0] * pool_kernel[0])),
+                     ceil((in_shape[3]-kernel_size[1]+1)/(float)(strides[1] * pool_kernel[0]))};
+        pool_padding = {0, 0};
+    }
+    std::cout << "Initialized pool dimensions" << std::endl;
+    try {
+        createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
+    } catch (error &e) {
+        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "message: " << e.message << std::endl;
+        throw;
+    }
+
+    return this;
+}
+
+
+void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel, memory::dims pool_strides,
+                             memory::dims pool_padding, algorithm pool_algorithm) {
+
+    auto pool1_dst_md = memory::desc({ pool_dst_tz }, memory::data_type::f32, memory::format::any);
+
+    /* create a pooling */
+    auto pool1_desc = pooling_forward::desc(prop_kind::forward_inference,
+                                            pool_algorithm, last_output->get_primitive_desc().desc(),
+                                            pool1_dst_md, pool_strides, pool_kernel, pool_padding,
+                                            pool_padding, padding_kind::zero);
+    auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
+    auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
+
+    /* create pooling primitive an add it to net */
+    net.push_back(
+            pooling_forward(pool1_pd, *last_output, *pool_dst_memory));
+
+    last_output = pool_dst_memory;
+    last_output_shape = pool_dst_tz;
+}
+
+

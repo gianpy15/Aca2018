@@ -13,6 +13,12 @@ public:
     INTNetwork(const memory::dims &input_size);
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) override;
 
+    AbsNet *addPool2D(const int *kernel_size, const int *strides, Pooling pooling_algorithm, Padding padding) override;
+
+protected:
+    void createPool2D(memory::dims pool_out_shape, memory::dims pool_kernel, memory::dims pool_strides,
+                      memory::dims pool_padding, algorithm pool_algorithm) override;
+
 private:
     void createConv2D(memory::dims conv_src_tz,
                       memory::dims conv_weights_tz,
