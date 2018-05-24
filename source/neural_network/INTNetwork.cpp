@@ -22,7 +22,6 @@ INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {
 }
 
 AbsNet * INTNetwork::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
-    std::cout << "CONV SETUP CHECKPOINT 0" << std::endl;
 
     memory::dims in_shape = last_output_shape;
 
@@ -31,17 +30,12 @@ AbsNet * INTNetwork::addConv2D(int channels_out, const int *kernel_size, const i
      * in_shape[1]: should be the number of channels of the input tensor
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
-    std::cout << "CONV SETUP CHECKPOINT 1" << std::endl;
 
     memory::dims conv_weights_tz = { channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
-    std::cout << "CONV SETUP CHECKPOINT 2" << std::endl;
     memory::dims conv_strides = { strides[0], strides[1] };
-    std::cout << "CONV SETUP CHECKPOINT 3" << std::endl;
     memory::dims out_shape;
     memory::dims padding_tz;
-
-    std::cout << "CONV SETUP CHECKPOINT 4" << std::endl;
 
     if (padding == Padding::SAME){
         out_shape = {in_shape[0],
@@ -56,7 +50,6 @@ AbsNet * INTNetwork::addConv2D(int channels_out, const int *kernel_size, const i
                      ceil((in_shape[3]-kernel_size[1]+1)/(float)strides[1])};
         padding_tz = {0, 0};
     }
-    std::cout << "Initialized conv dimensions" << std::endl;
     try {
         createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
     } catch (error &e) {
@@ -172,7 +165,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto weight_reorder_pd
             = reorder::primitive_desc(conv_user_weights_memory->get_primitive_desc(),
                                       conv_weights_memory->get_primitive_desc(), weight_attr);
-    net.push_back(reorder(
+    net_weights.push_back(reorder(
             weight_reorder_pd, *conv_user_weights_memory, *conv_weights_memory));
 
     auto conv_bias_memory = new memory(conv_prim_desc.bias_primitive_desc());
@@ -182,7 +175,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto bias_reorder_pd
             = reorder::primitive_desc(conv_user_bias_memory->get_primitive_desc(),
                                       conv_bias_memory->get_primitive_desc(), bias_attr);
-    net.push_back(reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory));
+    net_weights.push_back(reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory));
 
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 

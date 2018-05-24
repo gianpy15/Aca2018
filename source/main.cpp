@@ -17,7 +17,7 @@ int main() {
     std::cout << "Added second convolution" << std::endl;
     net->setup_net();
     std::cout << "Network setup successful!" << std::endl;
-    net->run_net();
+    net->run_net(100);
     std::cout << "FP Network run successful! Horay!" << std::endl;
 
     net = new INTNetwork({1, 3, 227, 227});
@@ -28,7 +28,7 @@ int main() {
     std::cout << "Added second convolution" << std::endl;
     net->setup_net();
     std::cout << "Network setup successful!" << std::endl;
-    net->run_net();
+    net->run_net(100);
     std::cout << "INT Network run successful! Horay!" << std::endl;
     return 0;
 }

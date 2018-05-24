@@ -26,6 +26,7 @@ public:
 
     virtual AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding)= 0;
     void run_net();
+    void run_net(int times);
     void setup_net();
 
 protected:
