@@ -106,7 +106,7 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
         != conv_src_memory->get_primitive_desc()) {
         std::cout << "Reordering source memory" << std::endl;
         conv_src_memory = new memory(conv_prim_desc.src_primitive_desc());
-        net.push_back(*(new reorder(*last_output, *conv_src_memory)));
+        net.push_back(reorder(*last_output, *conv_src_memory));
     }
 
     auto conv_weights_memory = conv_user_weights_memory;

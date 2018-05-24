@@ -156,7 +156,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto src_reorder_pd
             = reorder::primitive_desc(last_output->get_primitive_desc(),
                                       conv_src_memory->get_primitive_desc(), src_attr);
-    net.push_back(* new reorder(src_reorder_pd, *last_output, *conv_src_memory));
+    net.push_back(reorder(src_reorder_pd, *last_output, *conv_src_memory));
 
     auto conv_weights_memory = new memory(conv_prim_desc.weights_primitive_desc());
     primitive_attr weight_attr;
@@ -165,7 +165,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto weight_reorder_pd
             = reorder::primitive_desc(conv_user_weights_memory->get_primitive_desc(),
                                       conv_weights_memory->get_primitive_desc(), weight_attr);
-    net_weights.push_back(*new reorder(
+    net_weights.push_back(reorder(
             weight_reorder_pd, *conv_user_weights_memory, *conv_weights_memory));
 
     auto conv_bias_memory = new memory(conv_prim_desc.bias_primitive_desc());
@@ -175,13 +175,13 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     auto bias_reorder_pd
             = reorder::primitive_desc(conv_user_bias_memory->get_primitive_desc(),
                                       conv_bias_memory->get_primitive_desc(), bias_attr);
-    net_weights.push_back(*(new reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory)));
+    net_weights.push_back(reorder(bias_reorder_pd, *conv_user_bias_memory, *conv_bias_memory));
 
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 
     /* create convolution primitive and add it to net */
-    net.push_back(*(new convolution_forward(conv_prim_desc, *conv_src_memory,
-                                      *conv_weights_memory, *conv_bias_memory, *conv_dst_memory)));
+    net.push_back( convolution_forward(conv_prim_desc, *conv_src_memory,
+                                      *conv_weights_memory, *conv_bias_memory, *conv_dst_memory));
 
     /* Convert data back into fp32 and compare values with u8.
      * Note: data is unsigned since there are no negative values
@@ -207,8 +207,8 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     /* Convert the destination memory from convolution into user
      * data format if necessary */
     if (conv_dst_memory != fp_dst_memory) {
-        net.push_back(*(new
-                reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory)));
+        net.push_back(
+                reorder(dst_reorder_pd, *conv_dst_memory, *fp_dst_memory));
     }
 
     last_output = fp_dst_memory;
