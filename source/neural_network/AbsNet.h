@@ -26,7 +26,7 @@ public:
     AbsNet(const memory::dims &input_size);
 
     virtual AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding)= 0;
-    virtual AbsNet * addPool2D(const int *kernel_size, const int *strides, Pooling pooling_algorithm, Padding padding)= 0;
+    virtual AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding)= 0;
     void run_net();
     void run_net(int times);
     void setup_net();

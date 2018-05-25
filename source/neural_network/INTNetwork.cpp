@@ -215,7 +215,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz,
     last_output_shape = conv_dst_tz;
 }
 
-AbsNet *INTNetwork::addPool2D(const int *kernel_size, const int *strides, Pooling pooling_algorithm, Padding padding) {
+AbsNet *INTNetwork::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
     return nullptr;
 }
 

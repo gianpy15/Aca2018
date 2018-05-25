@@ -145,11 +145,11 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
 }
 
 
-AbsNet *FPNetwork::addPool2D(const int *kernel_size, const int *strides, Pooling pooling_algorithm, Padding padding) {
+AbsNet *FPNetwork::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
     memory::dims in_shape = last_output_shape;
     memory::dims pool_out_shape;
     memory::dims pool_kernel = { kernel_size[0], kernel_size[1] };
-    memory::dims pool_strides = { strides[0], strides[1] };
+    memory::dims pool_strides = { kernel_size[0], kernel_size[1] };
     memory::dims pool_padding;
 
     algorithm pool_alg = pooling_algorithm == MAX ? algorithm::pooling_max : algorithm::pooling_avg;
@@ -157,14 +157,14 @@ AbsNet *FPNetwork::addPool2D(const int *kernel_size, const int *strides, Pooling
     if (padding == Padding::SAME){
         pool_out_shape = {in_shape[0],
                      in_shape[1],
-                     in_shape[2]/(strides[0] * pool_kernel[0]),
-                     in_shape[3]/(strides[1] * pool_kernel[1])},
+                     in_shape[2]/(pool_kernel[0]),
+                     in_shape[3]/(pool_kernel[1])},
         pool_padding = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
     } else {
         pool_out_shape = {in_shape[0],
                      in_shape[1],
-                     ceil((in_shape[2]-kernel_size[0]+1)/(float)(strides[0] * pool_kernel[0])),
-                     ceil((in_shape[3]-kernel_size[1]+1)/(float)(strides[1] * pool_kernel[0]))};
+                     ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_kernel[0])),
+                     ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_kernel[1]))};
         pool_padding = {0, 0};
     }
     std::cout << "Initialized pool dimensions" << std::endl;
