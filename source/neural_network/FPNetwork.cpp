@@ -9,14 +9,14 @@
 
 FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     input_tz = input_size;
-    std::vector<float> user_src(std::accumulate(
+    auto user_src = new std::vector<float>(std::accumulate(
             input_size.begin(), input_size.end(), 1,
             std::multiplies<uint32_t>()));
     auto user_src_memory
             = new memory({ { { input_size }, memory::data_type::f32,
                          memory::format::nchw },
                        cpu_engine },
-                     user_src.data());
+                     user_src->data());
     last_output = user_src_memory;
     last_output_shape = input_tz;
 }
@@ -63,10 +63,10 @@ AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const in
 void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
                              memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
 
-    std::vector<float> conv_weights(std::accumulate(
+    auto conv_weights = new std::vector<float>(std::accumulate(
             conv_weights_tz.begin(), conv_weights_tz.end(), 1,
             std::multiplies<uint32_t>()));
-    std::vector<float> conv_bias(std::accumulate(conv_bias_tz.begin(),
+    auto conv_bias = new std::vector<float>(std::accumulate(conv_bias_tz.begin(),
                                                   conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
 
     /* create memory for user data */
@@ -74,13 +74,13 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
                          memory::format::oihw },
                        cpu_engine },
-                     conv_weights.data());
+                     conv_weights->data());
 
     auto conv_user_bias_memory
             = new memory({ { { conv_bias_tz }, memory::data_type::f32,
                          memory::format::x },
                        cpu_engine },
-                     conv_bias.data());
+                     conv_bias->data());
 
     /* create memory descriptors for convolution data w/ no specified format
      */
