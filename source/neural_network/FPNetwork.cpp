@@ -24,8 +24,8 @@ AbsNet * FPNetwork::createNet(const memory::dims &input_size) {
     return new FPNetwork(input_size);
 }
 
-void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
-                             memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding,
+void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims& conv_weights_tz, const memory::dims& conv_bias_tz,
+                             const memory::dims& conv_strides, const memory::dims& conv_dst_tz, const memory::dims& padding,
                              memory* conv_user_weights_memory, memory* conv_user_bias_memory) {
 
     /* create memory descriptors for convolution data w/ no specified format
@@ -83,8 +83,8 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
     last_output_shape = conv_dst_tz;
 }
 
-void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel, memory::dims pool_strides,
-                             memory::dims pool_padding, algorithm pool_algorithm) {
+void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims& pool_kernel, const memory::dims& pool_strides,
+                             const memory::dims& pool_padding, algorithm pool_algorithm) {
 
     auto pool1_dst_md = memory::desc({ pool_dst_tz }, memory::data_type::f32, memory::format::any);
 
@@ -104,7 +104,7 @@ void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel,
     last_output_shape = pool_dst_tz;
 }
 
-void FPNetwork::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz,
+void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
                          memory* fc_user_weights_memory, memory* fc_user_bias_memory) {
 
     /* create memory descriptors for convolution data w/ no specified format

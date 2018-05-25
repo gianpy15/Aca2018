@@ -27,7 +27,7 @@ enum Pooling { MAX, AVG };
 
 class AbsNet {
 public:
-    AbsNet(const memory::dims &input_size);
+    explicit AbsNet(const memory::dims &input_size);
 
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding);
     AbsNet * addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
@@ -45,7 +45,7 @@ protected:
     std::vector<std::vector<float>*> tmp_vecs;
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
-    std::vector<float> * generate_vec(memory::dims);
+    std::vector<float> * generate_vec(const memory::dims&);
     memory * last_output;
     /// Format: { batch, channels, width, height }
     memory::dims last_output_shape;
@@ -55,7 +55,7 @@ protected:
      */
     // make a forced reordering, use mask and scales only if quantization is needed
     static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst,
-                                    const int mask, const std::vector<float>& scales);
+                                    int mask, const std::vector<float>& scales);
     // make a forced reordering, if data type is not fp32 for both src and dst it will segfault
     static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst);
     // evaluate the need of reordering, and reorder iff necessary. Care about source memtracking
@@ -74,32 +74,32 @@ protected:
      * @param conv_dst_tz is the memory descriptor for the output tensor
      * @param padding is the padding desired, one of SAME or VALID
      */
-    virtual void createConv2D(memory::dims conv_src_tz,
-                              memory::dims conv_weights_tz,
-                              memory::dims conv_bias_tz,
-                              memory::dims conv_strides,
-                              memory::dims conv_dst_tz,
-                              memory::dims padding,
+    virtual void createConv2D(const memory::dims& conv_src_tz,
+                              const memory::dims& conv_weights_tz,
+                              const memory::dims& conv_bias_tz,
+                              const memory::dims& conv_strides,
+                              const memory::dims& conv_dst_tz,
+                              const memory::dims& padding,
                               memory* weights,
                               memory* bias)= 0;
-    void createConv2D(memory::dims conv_src_tz,
-                              memory::dims conv_weights_tz,
-                              memory::dims conv_bias_tz,
-                              memory::dims conv_strides,
-                              memory::dims conv_dst_tz,
-                              memory::dims padding);
+    void createConv2D(const memory::dims& conv_src_tz,
+                      const memory::dims& conv_weights_tz,
+                      const memory::dims& conv_bias_tz,
+                      const memory::dims& conv_strides,
+                      const memory::dims& conv_dst_tz,
+                      const memory::dims& padding);
 
-    virtual void createPool2D(memory::dims pool_out_shape,
-                              memory::dims pool_kernel,
-                              memory::dims pool_strides,
-                              memory::dims pool_padding,
+    virtual void createPool2D(const memory::dims& pool_out_shape,
+                              const memory::dims& pool_kernel,
+                              const memory::dims& pool_strides,
+                              const memory::dims& pool_padding,
                               algorithm pool_algorithm)= 0;
-    virtual void createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz,
+    virtual void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
                           memory * weights, memory * bias)=0;
 
-    void createFC(memory::dims fc_dst_tz,
-                  memory::dims fc_weights_tz,
-                  memory::dims fc_bias_tz);
+    void createFC(const memory::dims& fc_dst_tz,
+                  const memory::dims& fc_weights_tz,
+                  const memory::dims& fc_bias_tz);
 };
 
 

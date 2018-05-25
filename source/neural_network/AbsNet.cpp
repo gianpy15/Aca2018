@@ -77,8 +77,8 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
     } else {
         out_shape = {in_shape[0],
                      channels_out,
-                     ceil((in_shape[2]-kernel_size[0]+1)/(float)strides[0]),
-                     ceil((in_shape[3]-kernel_size[1]+1)/(float)strides[1])};
+                     (int)ceil((in_shape[2]-kernel_size[0]+1)/(double)strides[0]),
+                     (int)ceil((in_shape[3]-kernel_size[1]+1)/(double)strides[1])};
         padding_tz = {0, 0};
     }
     try {
@@ -110,8 +110,8 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
     } else {
         pool_out_shape = {in_shape[0],
                           in_shape[1],
-                          ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_strides[0])),
-                          ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_strides[1]))};
+                          (int)ceil((in_shape[2]-kernel_size[0]+1)/(double)(pool_strides[0])),
+                          (int)ceil((in_shape[3]-kernel_size[1]+1)/(double)(pool_strides[1]))};
         pool_padding = {0, 0};
     }
     // std::cout << "Initialized pool dimensions" << std::endl;
@@ -140,9 +140,9 @@ size_t AbsNet::total_memory_usage() {
     return acc;
 }
 
-std::vector<float>* AbsNet::generate_vec(memory::dims dims) {
+std::vector<float>* AbsNet::generate_vec(const memory::dims& dims) {
 
-    int size=1;
+    size_t size=1;
     for (auto elem: dims)
         size *= elem;
     auto vec = new std::vector<float>(size);
@@ -191,12 +191,12 @@ AbsNet *AbsNet::addFC(int outputs) {
     return this;
 }
 
-void AbsNet::createConv2D(memory::dims conv_src_tz,
-                          memory::dims conv_weights_tz,
-                          memory::dims conv_bias_tz,
-                          memory::dims conv_strides,
-                          memory::dims conv_dst_tz,
-                          memory::dims padding){
+void AbsNet::createConv2D(const memory::dims& conv_src_tz,
+                          const memory::dims& conv_weights_tz,
+                          const memory::dims& conv_bias_tz,
+                          const memory::dims& conv_strides,
+                          const memory::dims& conv_dst_tz,
+                          const memory::dims& padding){
     auto conv_weights = generate_vec(conv_weights_tz);
     auto conv_bias = generate_vec(conv_bias_tz);
 
@@ -222,7 +222,7 @@ void AbsNet::createConv2D(memory::dims conv_src_tz,
                  conv_bias_memory);
 }
 
-void AbsNet::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) {
+void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz) {
     auto weights = generate_vec(fc_weights_tz);
     auto bias = generate_vec(fc_bias_tz);
 
