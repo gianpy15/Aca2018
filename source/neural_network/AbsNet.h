@@ -30,7 +30,7 @@ public:
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
     void run_net();
     void run_net(int times);
-    void setup_net();
+    virtual void setup_net()=0;
 
 protected:
     memory::dims input_tz;

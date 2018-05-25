@@ -230,8 +230,10 @@ void INTNetwork::createPool2D(memory::dims pool_out_shape, memory::dims pool_ker
 }
 
 void INTNetwork::setup_net(){
-    while(!temporary_memories.empty()){
-        delete temporary_memories[-1];
-        temporary_memories.pop_back();
+    AbsNet::setup_net();
+
+    for (auto memobj : temporary_memories){
+        delete memobj;
     }
+    temporary_memories.clear();
 }

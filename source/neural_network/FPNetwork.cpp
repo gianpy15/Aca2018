@@ -205,4 +205,14 @@ void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel,
     last_output_shape = pool_dst_tz;
 }
 
-
+void FPNetwork::setup_net() {
+    if (!net_weights.empty()) {
+        try {
+            stream(stream::kind::eager).submit(net_weights).wait();
+        } catch (error &e) {
+            std::cerr << "status: " << e.status << std::endl;
+            std::cerr << "message: " << e.message << std::endl;
+            throw;
+        }
+    }
+}
