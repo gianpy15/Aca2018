@@ -37,6 +37,6 @@ AbsNet * test_intNet(int repetitions) {
 
 
 int main() {
-    AbsNet *net = test_fpNet(1);
+    //AbsNet *net = test_fpNet(1);
     AbsNet *net2 = test_intNet(1);
 }

@@ -6,6 +6,10 @@
 #define ACA2018_ABSNET_H
 
 #include <string>
+#include <iostream>
+#include <chrono>
+#include <cmath>
+
 #include "mkldnn.hpp"
 
 using namespace mkldnn;
@@ -25,11 +29,11 @@ class AbsNet {
 public:
     AbsNet(const memory::dims &input_size);
 
-    virtual AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding)= 0;
+    AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding);
     virtual AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding)= 0;
     void run_net();
     void run_net(int times);
-    void setup_net();
+    virtual void setup_net();
 
 protected:
     memory::dims input_tz;

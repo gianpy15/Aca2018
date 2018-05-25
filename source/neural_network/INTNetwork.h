@@ -10,11 +10,9 @@
 
 class INTNetwork: public AbsNet {
 public:
-    INTNetwork(const memory::dims &input_size);
-    AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) override;
-
+    explicit INTNetwork(const memory::dims &input_size);
     AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) override;
-    void setup_net();
+    void setup_net() override;
 protected:
     void createPool2D(memory::dims pool_out_shape, memory::dims pool_kernel, memory::dims pool_strides,
                       memory::dims pool_padding, algorithm pool_algorithm) override;

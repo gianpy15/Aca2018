@@ -21,45 +21,6 @@ FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     last_output_shape = input_tz;
 }
 
-AbsNet * FPNetwork::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
-    memory::dims in_shape = last_output_shape;
-
-    /**
-     * Channels_out: the number of channels outputs by the convolution
-     * in_shape[1]: should be the number of channels of the input tensor
-     * kernel_size[0:1]: is the effective dimension of the kernel function
-     */
-
-    memory::dims conv_weights_tz = { channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
-    memory::dims conv_bias_tz = { channels_out };
-    memory::dims conv_strides = { strides[0], strides[1] };
-    memory::dims out_shape;
-    memory::dims padding_tz;
-
-    if (padding == Padding::SAME){
-        out_shape = {in_shape[0],
-                     channels_out,
-                     in_shape[2]/strides[0],
-                     in_shape[3]/strides[1]};
-        padding_tz = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
-    } else {
-        out_shape = {in_shape[0],
-                     channels_out,
-                     ceil((in_shape[2]-kernel_size[0]+1)/(float)strides[0]),
-                     ceil((in_shape[3]-kernel_size[1]+1)/(float)strides[1])};
-        padding_tz = {0, 0};
-    }
-    try {
-        createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
-    } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
-        std::cerr << "message: " << e.message << std::endl;
-        throw;
-    }
-
-    return this;
-}
-
 void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
                              memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
 
@@ -143,7 +104,6 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
     last_output = conv_dst_memory;
     last_output_shape = conv_dst_tz;
 }
-
 
 AbsNet *FPNetwork::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
     memory::dims in_shape = last_output_shape;
