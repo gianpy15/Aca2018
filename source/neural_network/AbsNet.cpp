@@ -1,6 +1,7 @@
 //
 // Created by gianpaolo on 5/23/18.
 //
+#include <mkldnn_types.h>
 #include "AbsNet.h"
 
 void AbsNet::run_net(int times) {
@@ -188,4 +189,95 @@ AbsNet *AbsNet::addFC(int outputs) {
     }
 
     return this;
+}
+
+void AbsNet::createConv2D(memory::dims conv_src_tz,
+                          memory::dims conv_weights_tz,
+                          memory::dims conv_bias_tz,
+                          memory::dims conv_strides,
+                          memory::dims conv_dst_tz,
+                          memory::dims padding){
+    auto conv_weights = generate_vec(conv_weights_tz);
+    auto conv_bias = generate_vec(conv_bias_tz);
+
+    /* create memory for user data */
+    auto conv_weights_memory
+            = new memory({ { { conv_weights_tz }, memory::data_type::f32,
+                             memory::format::oihw },
+                           cpu_engine },
+                         conv_weights->data());
+
+    auto conv_bias_memory
+            = new memory({ { { conv_bias_tz }, memory::data_type::f32,
+                             memory::format::x },
+                           cpu_engine },
+                         conv_bias->data());
+    createConv2D(conv_src_tz,
+                 conv_weights_tz,
+                 conv_bias_tz,
+                 conv_strides,
+                 conv_dst_tz,
+                 padding,
+                 conv_weights_memory,
+                 conv_bias_memory);
+}
+
+void AbsNet::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) {
+    auto weights = generate_vec(fc_weights_tz);
+    auto bias = generate_vec(fc_bias_tz);
+
+    /* create memory for user data */
+    auto weights_memory
+            = new memory({ { { fc_weights_tz }, memory::data_type::f32,
+                             memory::format::nc },
+                           cpu_engine },
+                         weights->data());
+
+    auto bias_memory
+            = new memory({ { { fc_bias_tz }, memory::data_type::f32,
+                             memory::format::x },
+                           cpu_engine },
+                         bias->data());
+
+    createFC(fc_dst_tz, fc_weights_tz, fc_bias_tz, weights_memory, bias_memory);
+}
+
+memory * AbsNet::make_reorder(std::vector<primitive>& netops, memory *src, memory *dst,
+                                const int mask, const std::vector<float>& scales) {
+
+    if(src->get_primitive_desc().desc().data.data_type != mkldnn_f32
+       || dst->get_primitive_desc().desc().data.data_type != mkldnn_f32){
+        primitive_attr dst_attr;
+        dst_attr.set_int_output_round_mode(round_mode::round_nearest);
+        dst_attr.set_output_scales(mask, scales);
+        auto reorder_pd
+                = reorder::primitive_desc(src->get_primitive_desc(),
+                                          dst->get_primitive_desc(), dst_attr);
+        primitive * ret = new reorder(reorder_pd, *src, *dst);
+        netops.push_back(*ret);
+        return dst;
+    }
+    else{
+        primitive * ret = new reorder(*src, *dst);
+        netops.push_back(*ret);
+        return dst;
+    }
+}
+
+memory * AbsNet::make_reorder(std::vector<primitive>& netops, memory *src, memory *dst) {
+    return make_reorder(netops, src, dst, 0, std::vector<float>(0));
+}
+
+memory * AbsNet::make_conditional_reorder(std::vector<primitive> &netops, memory *src, memory::primitive_desc &dst,
+                                          std::vector<memory *> &memtracker) {
+
+    if (dst != src->get_primitive_desc()) {
+        auto mem = new memory(dst);
+        memtracker.push_back(src);
+        auto ret = new reorder(*src, *mem);
+        netops.push_back(*ret);
+        return mem;
+    }
+
+    return src;
 }

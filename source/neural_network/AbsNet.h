@@ -46,10 +46,22 @@ protected:
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
     std::vector<float> * generate_vec(memory::dims);
-    memory * last_output = new memory(mkldnn::primitive());
+    memory * last_output;
     /// Format: { batch, channels, width, height }
     memory::dims last_output_shape;
     engine cpu_engine = engine(engine::cpu, 0);
+    /* REORDERING FUNCTIONS:
+     * these functions receive memories to map into a destination/format and return the destination memory
+     */
+    // make a forced reordering, use mask and scales only if quantization is needed
+    static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst,
+                                    const int mask, const std::vector<float>& scales);
+    // make a forced reordering, if data type is not fp32 for both src and dst it will segfault
+    static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst);
+    // evaluate the need of reordering, and reorder iff necessary. Care about source memtracking
+    // if the destination is different.
+    static memory * make_conditional_reorder(std::vector<primitive> &netops, memory *src, memory::primitive_desc &dst,
+                                             std::vector<memory *> &memtracker);
 
     /**
      * This method will be called from addConv2D and adds a convolution layer to the network
@@ -67,17 +79,27 @@ protected:
                               memory::dims conv_bias_tz,
                               memory::dims conv_strides,
                               memory::dims conv_dst_tz,
-                              memory::dims padding)= 0;
+                              memory::dims padding,
+                              memory* weights,
+                              memory* bias)= 0;
+    void createConv2D(memory::dims conv_src_tz,
+                              memory::dims conv_weights_tz,
+                              memory::dims conv_bias_tz,
+                              memory::dims conv_strides,
+                              memory::dims conv_dst_tz,
+                              memory::dims padding);
 
     virtual void createPool2D(memory::dims pool_out_shape,
                               memory::dims pool_kernel,
                               memory::dims pool_strides,
                               memory::dims pool_padding,
                               algorithm pool_algorithm)= 0;
+    virtual void createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz,
+                          memory * weights, memory * bias)=0;
 
-    virtual void createFC(memory::dims fc_dst_tz,
-                          memory::dims fc_weights_tz,
-                          memory::dims fc_bias_tz)= 0;
+    void createFC(memory::dims fc_dst_tz,
+                  memory::dims fc_weights_tz,
+                  memory::dims fc_bias_tz);
 };
 
 
