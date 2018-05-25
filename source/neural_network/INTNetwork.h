@@ -25,6 +25,9 @@ private:
                       memory::dims conv_strides,
                       memory::dims conv_dst_tz,
                       memory::dims padding) override;
+
+protected:
+    void createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) override;
 };
 
 

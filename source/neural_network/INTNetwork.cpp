@@ -195,3 +195,17 @@ void INTNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel
     last_output = pool_dst_memory;
     last_output_shape = pool_dst_tz;
 }
+
+void INTNetwork::setup_net(){
+    AbsNet::setup_net();
+
+    for (auto memobj : temporary_memories){
+        delete memobj;
+    }
+    temporary_memories.clear();
+}
+
+void INTNetwork::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) {
+    std::cerr << "Function not implemented" << std::endl;
+    exit(1);
+}
