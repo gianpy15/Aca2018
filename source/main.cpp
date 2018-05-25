@@ -1,6 +1,7 @@
 #include <iostream>
 #include "neural_network/FPNetwork.h"
 #include "neural_network/INTNetwork.h"
+#include "monitoring/mem_monitoring.h"
 
 const int kernel_5x5[] = {5, 5};
 const int kernel_3x3[] = {3, 3};
@@ -44,10 +45,19 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
+    size_t init_mem = getCurrentMemUsage();
+    std::cout << "Memory base: " << init_mem/1000 << "MB" << std::endl;
+
     std::cout << "Testing Int network" << std::endl;
     test_net(&INTNetwork::createNet, 1);
+    size_t after_intnet = getCurrentMemUsage();
+    std::cout << "Memory for int8 net: " << (after_intnet - init_mem)/1000 << "MB" << std::endl;
+
     std::cout << "Testing FP network" << std::endl;
     test_net(&FPNetwork::createNet, 1);
+    size_t after_fpnet = getCurrentMemUsage();
+    std::cout << "Memory for fp32 net: " << (after_fpnet - after_intnet)/1000 << "MB" << std::endl;
+
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);
 }
