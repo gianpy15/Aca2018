@@ -12,11 +12,11 @@ const int four_stride[] = {4, 4};
 
 AbsNet * setup_test_net(AbsNet* baseNet){
     // std::cout << "Network initialized" << std::endl;
-    baseNet->addConv2D(512, kernel_3x3, no_stride, Padding::VALID);
+    baseNet->addConv2D(128, kernel_3x3, no_stride, Padding::VALID);
     // std::cout << "Added first convolution" << std::endl;
     //baseNet->addPool2D(kernel_3x3, Pooling::MAX, Padding::VALID);
     // std::cout << "Added first pooling" << std::endl;
-    baseNet->addConv2D(512, kernel_5x5, no_stride, Padding::SAME);
+    baseNet->addConv2D(128, kernel_5x5, no_stride, Padding::SAME);
     // std::cout << "Added second convolution" << std::endl;
     //baseNet->addPool2D(kernel_2x2, Pooling::MAX, Padding::SAME);
     // std::cout << "Added second pooling" << std::endl;

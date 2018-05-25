@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(Aca2018)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native")
 
 add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h)
 add_executable(Intel source/from_intel_example.cpp)
