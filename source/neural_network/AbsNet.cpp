@@ -50,7 +50,7 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
 
-    memory::dims conv_weights_tz = { channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
+    memory::dims conv_weights_tz = { 1, channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
     memory::dims conv_strides = { strides[0], strides[1] };
     memory::dims out_shape;
@@ -71,6 +71,40 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
     }
     try {
         createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
+    } catch (error &e) {
+        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "message: " << e.message << std::endl;
+        throw;
+    }
+
+    return this;
+}
+
+AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
+    memory::dims in_shape = last_output_shape;
+    memory::dims pool_out_shape;
+    memory::dims pool_kernel = { kernel_size[0], kernel_size[1] };
+    memory::dims pool_strides = { kernel_size[0], kernel_size[1] };
+    memory::dims pool_padding;
+
+    algorithm pool_alg = pooling_algorithm == MAX ? algorithm::pooling_max : algorithm::pooling_avg;
+
+    if (padding == Padding::SAME){
+        pool_out_shape = {in_shape[0],
+                          in_shape[1],
+                          in_shape[2]/(pool_strides[0]),
+                          in_shape[3]/(pool_strides[1])},
+                pool_padding = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
+    } else {
+        pool_out_shape = {in_shape[0],
+                          in_shape[1],
+                          ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_strides[0])),
+                          ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_strides[1]))};
+        pool_padding = {0, 0};
+    }
+    std::cout << "Initialized pool dimensions" << std::endl;
+    try {
+        createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
     } catch (error &e) {
         std::cerr << "status: " << e.status << std::endl;
         std::cerr << "message: " << e.message << std::endl;

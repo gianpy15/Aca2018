@@ -11,7 +11,7 @@
 class FPNetwork: public AbsNet {
 public:
     explicit FPNetwork(const memory::dims &input_size);
-    AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) override;
+    AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
     static AbsNet *createNet(const memory::dims &input_size);
     void setup_net() override;
 private:

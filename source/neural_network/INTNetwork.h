@@ -11,7 +11,7 @@
 class INTNetwork: public AbsNet {
 public:
     explicit INTNetwork(const memory::dims &input_size);
-    AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) override;
+    AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
     void setup_net() override;
     static AbsNet *createNet(const memory::dims &input_size);
 

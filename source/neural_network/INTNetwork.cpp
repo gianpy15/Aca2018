@@ -53,7 +53,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
     /* create memory for user data */
     auto conv_user_weights_memory
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
-                             memory::format::oihw },
+                             memory::format::goihw },
                            cpu_engine },
                          conv_weights->data());
 
@@ -176,13 +176,25 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
     last_output_shape = conv_dst_tz;
 }
 
-AbsNet *INTNetwork::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
-    return nullptr;
-}
+void INTNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel, memory::dims pool_strides,
+                             memory::dims pool_padding, algorithm pool_algorithm) {
 
-void INTNetwork::createPool2D(memory::dims pool_out_shape, memory::dims pool_kernel, memory::dims pool_strides,
-                              memory::dims pool_padding, algorithm pool_algorithm) {
+    auto pool1_dst_md = memory::desc({ pool_dst_tz }, memory::data_type::f32, memory::format::any);
 
+    /* create a pooling */
+    auto pool1_desc = pooling_forward::desc(prop_kind::forward_inference,
+                                            pool_algorithm, last_output->get_primitive_desc().desc(),
+                                            pool1_dst_md, pool_strides, pool_kernel, pool_padding,
+                                            pool_padding, padding_kind::zero);
+    auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
+    auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
+
+    /* create pooling primitive an add it to net */
+    net.push_back(
+            pooling_forward(pool1_pd, *last_output, *pool_dst_memory));
+
+    last_output = pool_dst_memory;
+    last_output_shape = pool_dst_tz;
 }
 
 void INTNetwork::setup_net(){
