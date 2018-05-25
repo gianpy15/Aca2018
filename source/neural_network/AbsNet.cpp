@@ -35,6 +35,17 @@ void AbsNet::setup_net() {
             throw;
         }
     }
+
+    for (auto memobj : temporary_memobjs){
+        free(memobj->get_data_handle());
+        delete memobj;
+    }
+    temporary_memobjs.clear();
+
+    for (auto memobj : tmp_vecs){
+        memobj->clear();
+    }
+    tmp_vecs.clear();
 }
 
 AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
@@ -98,8 +109,8 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
     } else {
         pool_out_shape = {in_shape[0],
                           in_shape[1],
-                          ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_strides[0])),
-                          ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_strides[1]))};
+                          ceil((in_shape[2]-kernel_size[0]+1)/(double)(pool_strides[0])),
+                          ceil((in_shape[3]-kernel_size[1]+1)/(double)(pool_strides[1]))};
         pool_padding = {0, 0};
     }
     std::cout << "Initialized pool dimensions" << std::endl;
@@ -112,4 +123,46 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
     }
 
     return this;
+}
+
+size_t AbsNet::total_memory_usage() {
+    size_t acc = 0;
+    for (auto memobj: memobjs){
+        acc += memobj->get_primitive_desc().get_size();
+    }
+    for (auto memobj: tmp_vecs){
+        acc += memobj->size() * sizeof(float);
+    }
+    return acc;
+}
+
+std::vector<float>* AbsNet::generate_vec(memory::dims dims) {
+
+    int size=1;
+    for (auto elem: dims)
+        size *= elem;
+    auto vec = new std::vector<float>(size);
+    tmp_vecs.push_back(vec);
+    return vec;
+}
+
+AbsNet::~AbsNet() {
+
+    for (auto memobj : temporary_memobjs){
+        //delete memobj->get_data_handle();
+        delete memobj;
+    }
+    temporary_memobjs.clear();
+
+    for (auto memobj : memobjs){
+        //delete memobj->get_data_handle();
+        delete memobj;
+    }
+    memobjs.clear();
+
+    for (auto memobj : tmp_vecs){
+        memobj->clear();
+    }
+    tmp_vecs.clear();
+
 }

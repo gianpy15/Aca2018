@@ -9,14 +9,13 @@
 
 INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     input_tz = input_size;
-    auto user_src = new std::vector<float>(std::accumulate(
-            input_size.begin(), input_size.end(), 1,
-            std::multiplies<uint32_t>()));
+    auto user_src = generate_vec(input_size);
     auto user_src_memory
             = new memory({ { { input_size }, memory::data_type::f32,
                              memory::format::nchw },
                            cpu_engine },
                          user_src->data());
+    memobjs.push_back(user_src_memory);
     last_output = user_src_memory;
     last_output_shape = input_tz;
 }
@@ -28,27 +27,23 @@ AbsNet * INTNetwork::createNet(const memory::dims &input_size) {
 void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
                               memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
     /* Set Scaling mode for int8 quantizing */
-    const std::vector<float> src_scales = { 1.8f };
-    const std::vector<float> weight_scales = { 2.0f };
-    const std::vector<float> bias_scales = { 1.0f };
-    const std::vector<float> dst_scales = { 0.55f };
+    const std::vector<float> src_scales = { 2.0f }; // Qa = 255 / max(source)
+    const std::vector<float> weight_scales = { 2.0f }; // Qw = 127 / max(abs(weights))
+    const std::vector<float> bias_scales = { 4.0f }; // QaQw
+    const std::vector<float> dst_scales = { 4.0f }; // will result in QaQw
     /* assign halves of vector with arbitrary values */
-    std::vector<float> conv_scales(384);
-    const int scales_half = 384 / 2;
-    std::fill(conv_scales.begin(), conv_scales.begin() + scales_half, 0.3f);
-    std::fill(conv_scales.begin() + scales_half + 1, conv_scales.end(), 0.8f);
+    auto conv_scales = generate_vec({(int)conv_weights_tz[0]});
+    std::fill(conv_scales->begin(), conv_scales->end(), 0.3f);
 
     const int src_mask = 0;
     const int weight_mask = 0;
     const int bias_mask = 0;
     const int dst_mask = 0;
-    const int conv_mask = 2; // 1 << output_channel_dim
+    const int conv_mask = 1;
 
     /* Allocate and fill buffers for weights and bias */
-    auto conv_weights = new std::vector<float>(std::accumulate(conv_weights_tz.begin(),
-                                                    conv_weights_tz.end(), 1, std::multiplies<uint32_t>()));
-    auto conv_bias = new std::vector<float>(std::accumulate(conv_bias_tz.begin(),
-                                                 conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
+    auto conv_weights = generate_vec(conv_weights_tz);
+    auto conv_bias = generate_vec(conv_bias_tz);
 
     /* create memory for user data */
     auto conv_user_weights_memory
@@ -63,8 +58,8 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
                            cpu_engine },
                          conv_bias->data());
 
-    temporary_memories.push_back(conv_user_bias_memory);
-    temporary_memories.push_back(conv_user_weights_memory);
+    temporary_memobjs.push_back(conv_user_bias_memory);
+    temporary_memobjs.push_back(conv_user_weights_memory);
 
 
     /* create memory descriptors for convolution data w/ no specified format */
@@ -86,7 +81,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
     /* define the convolution attributes */
     primitive_attr conv_attr;
     conv_attr.set_int_output_round_mode(round_mode::round_nearest);
-    conv_attr.set_output_scales(conv_mask, conv_scales);
+    conv_attr.set_output_scales(conv_mask, *conv_scales);
 
     /* AlexNet: execute ReLU as PostOps */
     const float ops_scale = 1.f;
@@ -143,6 +138,11 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
 
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 
+    memobjs.push_back(conv_src_memory);
+    memobjs.push_back(conv_weights_memory);
+    memobjs.push_back(conv_dst_memory);
+    memobjs.push_back(conv_bias_memory);
+
     /* create convolution primitive and add it to net */
     net.push_back( convolution_forward(conv_prim_desc, *conv_src_memory,
                                       *conv_weights_memory, *conv_bias_memory, *conv_dst_memory));
@@ -151,9 +151,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
      * Note: data is unsigned since there are no negative values
      * after ReLU */
 
-    auto fpoutput = new std::vector<float>(std::accumulate(
-            conv_dst_tz.begin(), conv_dst_tz.end(), 1,
-            std::multiplies<uint32_t>()));
+    auto fpoutput = generate_vec(conv_dst_tz);
 
     /* Create a memory primitive for user data output */
     auto fp_dst_memory = new memory(
@@ -161,6 +159,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
               cpu_engine },
             fpoutput->data());
 
+    memobjs.push_back(fp_dst_memory);
     primitive_attr dst_attr;
     dst_attr.set_int_output_round_mode(round_mode::round_nearest);
     dst_attr.set_output_scales(dst_mask, dst_scales);
@@ -188,20 +187,11 @@ void INTNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel
                                             pool_padding, padding_kind::zero);
     auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
     auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
-
+    memobjs.push_back(pool_dst_memory);
     /* create pooling primitive an add it to net */
     net.push_back(
             pooling_forward(pool1_pd, *last_output, *pool_dst_memory));
 
     last_output = pool_dst_memory;
     last_output_shape = pool_dst_tz;
-}
-
-void INTNetwork::setup_net(){
-    AbsNet::setup_net();
-
-    for (auto memobj : temporary_memories){
-        delete memobj;
-    }
-    temporary_memories.clear();
 }

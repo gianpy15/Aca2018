@@ -35,11 +35,16 @@ public:
     void run_net();
     void run_net(int times);
     virtual void setup_net();
-
+    size_t total_memory_usage();
+    ~AbsNet();
 protected:
     memory::dims input_tz;
+    std::vector<memory*> memobjs;
+    std::vector<memory*> temporary_memobjs;
+    std::vector<std::vector<float>*> tmp_vecs;
     std::vector<primitive> net;
     std::vector<primitive> net_weights;
+    std::vector<float> * generate_vec(memory::dims);
     memory * last_output = new memory(mkldnn::primitive());
     /// Format: { batch, channels, width, height }
     memory::dims last_output_shape;

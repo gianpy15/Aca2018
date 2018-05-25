@@ -18,8 +18,8 @@ AbsNet * setup_test_net(AbsNet* baseNet){
     baseNet->addPool2D(kernel_3x3, Pooling::MAX, Padding::VALID);
     // std::cout << "Added first pooling" << std::endl;
     baseNet->addConv2D(256, kernel_5x5, no_stride, Padding::SAME);
-    for (int i=0; i<10; i++)
-        baseNet->addConv2D(256, kernel_3x3, no_stride, Padding::SAME);
+    for (int i=0; i<1; i++)
+        baseNet->addConv2D(512, kernel_3x3, no_stride, Padding::SAME);
     // std::cout << "Added second convolution" << std::endl;
     baseNet->addPool2D(kernel_2x2, Pooling::MAX, Padding::SAME);
     // std::cout << "Added second pooling" << std::endl;
@@ -30,7 +30,7 @@ AbsNet * setup_test_net(AbsNet* baseNet){
 
 
 AbsNet * test_net(AbsNet* (*initializer)(const memory::dims&), int repetitions) {
-    AbsNet *net = initializer({1, 3, 227, 227});
+    AbsNet *net = initializer({1, 3, 512, 512});
     net = setup_test_net(net);
     net->run_net(repetitions);
     return net;
@@ -48,15 +48,19 @@ int main() {
     size_t init_mem = getCurrentMemUsage();
     std::cout << "Memory base: " << init_mem/1000 << "MB" << std::endl;
 
-    std::cout << "Testing Int network" << std::endl;
-    test_net(&INTNetwork::createNet, 1);
-    size_t after_intnet = getCurrentMemUsage();
-    std::cout << "Memory for int8 net: " << (after_intnet - init_mem)/1000 << "MB" << std::endl;
-
     std::cout << "Testing FP network" << std::endl;
-    test_net(&FPNetwork::createNet, 1);
+    auto fpnet = test_net(&FPNetwork::createNet, 1);
+    std::cout << "Memory for fp32 net (coll): " << fpnet->total_memory_usage()/1000000 << "MB" << std::endl;
     size_t after_fpnet = getCurrentMemUsage();
-    std::cout << "Memory for fp32 net: " << (after_fpnet - after_intnet)/1000 << "MB" << std::endl;
+    delete fpnet;
+    std::cout << "Memory for fp32 net (proc): " << (after_fpnet - init_mem)/1000 << "MB" << std::endl;
+
+    std::cout << "Testing Int network" << std::endl;
+    auto intnet = test_net(&INTNetwork::createNet, 1);
+    std::cout << "Memory for int8 net (coll): " << intnet->total_memory_usage()/1000000 << "MB" << std::endl;
+    size_t after_intnet = getCurrentMemUsage();
+    delete intnet;
+    std::cout << "Memory for int8 net (proc): " << (after_intnet - after_fpnet)/1000 << "MB" << std::endl;
 
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);

@@ -9,14 +9,13 @@
 
 FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     input_tz = input_size;
-    auto user_src = new std::vector<float>(std::accumulate(
-            input_size.begin(), input_size.end(), 1,
-            std::multiplies<uint32_t>()));
+    auto user_src = generate_vec(input_size);
     auto user_src_memory
             = new memory({ { { input_size }, memory::data_type::f32,
                          memory::format::nchw },
                        cpu_engine },
                      user_src->data());
+    memobjs.push_back(user_src_memory);
     last_output = user_src_memory;
     last_output_shape = input_tz;
 }
@@ -28,12 +27,11 @@ AbsNet * FPNetwork::createNet(const memory::dims &input_size) {
 void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
                              memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
 
-    auto conv_weights = new std::vector<float>(std::accumulate(
-            conv_weights_tz.begin(), conv_weights_tz.end(), 1,
-            std::multiplies<uint32_t>()));
-    auto conv_bias = new std::vector<float>(std::accumulate(conv_bias_tz.begin(),
-                                                  conv_bias_tz.end(), 1, std::multiplies<uint32_t>()));
+    auto conv_weights = generate_vec(conv_weights_tz);
+    auto conv_bias = generate_vec(conv_bias_tz);
 
+    tmp_vecs.push_back(conv_weights);
+    tmp_vecs.push_back(conv_bias);
     /* create memory for user data */
     auto conv_user_weights_memory
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
@@ -71,6 +69,7 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
         != conv_src_memory->get_primitive_desc()) {
         conv_src_memory = new memory(conv_prim_desc.src_primitive_desc());
         net.push_back(reorder(*last_output, *conv_src_memory));
+        memobjs.push_back(conv_src_memory);
     }
 
     auto conv_weights_memory = conv_user_weights_memory;
@@ -80,10 +79,13 @@ void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights
                 = new memory(conv_prim_desc.weights_primitive_desc());
         net_weights.push_back(
                 reorder(*conv_user_weights_memory, *conv_weights_memory));
+        temporary_memobjs.push_back(conv_user_weights_memory);
     }
 
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
-
+    memobjs.push_back(conv_dst_memory);
+    memobjs.push_back(conv_weights_memory);
+    memobjs.push_back(conv_user_bias_memory);
     /* create convolution primitive and add it to net */
     net.push_back(convolution_forward(conv_prim_desc, *conv_src_memory,
                                       *conv_weights_memory, *conv_user_bias_memory,
@@ -119,7 +121,7 @@ void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel,
                                             pool_padding, padding_kind::zero);
     auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
     auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
-
+    memobjs.push_back(pool_dst_memory);
     /* create pooling primitive an add it to net */
     net.push_back(
             pooling_forward(pool1_pd, *last_output, *pool_dst_memory));

@@ -12,7 +12,6 @@ class INTNetwork: public AbsNet {
 public:
     explicit INTNetwork(const memory::dims &input_size);
     AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
-    void setup_net() override;
     static AbsNet *createNet(const memory::dims &input_size);
 
 protected:
@@ -20,7 +19,6 @@ protected:
                       memory::dims pool_padding, algorithm pool_algorithm) override;
 
 private:
-    std::vector<memory*> temporary_memories;
     void createConv2D(memory::dims conv_src_tz,
                       memory::dims conv_weights_tz,
                       memory::dims conv_bias_tz,
