@@ -35,7 +35,7 @@ public:
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
     void run_net();
     void run_net(int times);
-    virtual void setup_net();
+    void setup_net();
     size_t total_memory_usage();
     ~AbsNet();
 protected:

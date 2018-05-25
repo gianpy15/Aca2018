@@ -166,3 +166,23 @@ AbsNet::~AbsNet() {
     tmp_vecs.clear();
 
 }
+
+AbsNet *AbsNet::addFC(int outputs) {
+    int inputs = last_output_shape[1];
+    int batch_size = last_output_shape[0];
+    memory::dims weights_shape = { inputs, outputs };
+    memory::dims biases_shape = { outputs };
+    memory::dims output_shape = { batch_size, outputs };
+
+    std::cout << "initialized fc dimensions" << std::endl;
+
+    try {
+        createFC(output_shape, weights_shape, biases_shape);
+    } catch (error &e) {
+        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "message: " << e.message << std::endl;
+        throw;
+    }
+
+    return this;
+}

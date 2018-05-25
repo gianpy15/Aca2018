@@ -13,7 +13,7 @@ public:
     explicit FPNetwork(const memory::dims &input_size);
     AbsNet *addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
     static AbsNet *createNet(const memory::dims &input_size);
-    void setup_net() override;
+    void setup_net();
 private:
     void createConv2D(memory::dims conv_src_tz,
                       memory::dims conv_weights_tz,

@@ -131,17 +131,15 @@ void FPNetwork::createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel,
 }
 
 void FPNetwork::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) {
-    std::vector<float> fc_weights(std::accumulate(fc_weights_tz.begin(),
-                                                   fc_weights_tz.end(), 1, std::multiplies<uint32_t>()));
-    std::vector<float> fc_bias(std::accumulate(fc_bias_tz.begin(),
-                                                fc_bias_tz.end(), 1, std::multiplies<uint32_t>()));
+    auto fc_weights = generate_vec(fc_weights_tz);
+    auto fc_bias = generate_vec(fc_bias_tz);
 
     /* create memory for user data */
     auto fc_user_weights_memory = new memory({ { { fc_weights_tz }, memory::data_type::f32,
-                                                  memory::format::nc },  cpu_engine }, fc_weights.data());
+                                                  memory::format::nc },  cpu_engine }, fc_weights->data());
 
     auto fc_user_bias_memory = new memory({ { { fc_bias_tz }, memory::data_type::f32,
-                                               memory::format::x }, cpu_engine }, fc_bias.data());
+                                               memory::format::x }, cpu_engine }, fc_bias->data());
 
     /* create memory descriptors for convolution data w/ no specified format
      */
@@ -158,26 +156,25 @@ void FPNetwork::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, mem
         != fc_user_weights_memory->get_primitive_desc()) {
         fc_weights_memory = new memory(fc_prim_desc.weights_primitive_desc());
         net.push_back(reorder(*fc_user_weights_memory, *fc_weights_memory));
+        temporary_memobjs.push_back(fc_user_weights_memory);
+    }
+
+    auto fc_src_memory = last_output;
+    if (memory::primitive_desc(fc_prim_desc.src_primitive_desc())
+        != last_output->get_primitive_desc()) {
+        fc_src_memory = new memory(fc_prim_desc.src_primitive_desc());
+        net.push_back(reorder(*last_output, *fc_src_memory));
+        memobjs.push_back(fc_src_memory);
     }
 
     auto fc_dst_memory = new memory(fc_prim_desc.dst_primitive_desc());
-
+    memobjs.push_back(fc_dst_memory);
+    memobjs.push_back(fc_weights_memory);
+    memobjs.push_back(fc_user_bias_memory);
     /* create convolution primitive and add it to net */
-    net.push_back(inner_product_forward(fc_prim_desc, *last_output,
+    net.push_back(inner_product_forward(fc_prim_desc, *fc_src_memory,
                                         *fc_weights_memory, *fc_user_bias_memory, *fc_dst_memory));
 
     last_output = fc_dst_memory;
     last_output_shape = fc_dst_tz;
-}
-
-void FPNetwork::setup_net() {
-    if (!net_weights.empty()) {
-        try {
-            stream(stream::kind::eager).submit(net_weights).wait();
-        } catch (error &e) {
-            std::cerr << "status: " << e.status << std::endl;
-            std::cerr << "message: " << e.message << std::endl;
-            throw;
-        }
-    }
 }
