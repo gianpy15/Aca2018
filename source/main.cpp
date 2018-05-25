@@ -23,6 +23,7 @@ AbsNet * setup_test_net(AbsNet* baseNet){
     // std::cout << "Added second convolution" << std::endl;
     baseNet->addPool2D(kernel_2x2, Pooling::MAX, Padding::SAME);
     // std::cout << "Added second pooling" << std::endl;
+    std::cout << "Peak memory usage: " << baseNet->total_memory_usage()/1000000 << "MB" << std::endl;
     baseNet->setup_net();
     // std::cout << "Network setup successful!" << std::endl;
     return baseNet;

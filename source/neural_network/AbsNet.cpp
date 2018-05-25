@@ -113,7 +113,7 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
                           ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_strides[1]))};
         pool_padding = {0, 0};
     }
-    std::cout << "Initialized pool dimensions" << std::endl;
+    // std::cout << "Initialized pool dimensions" << std::endl;
     try {
         createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
     } catch (error &e) {
@@ -132,6 +132,9 @@ size_t AbsNet::total_memory_usage() {
     }
     for (auto memobj: tmp_vecs){
         acc += memobj->size() * sizeof(float);
+    }
+    for (auto memobj: temporary_memobjs){
+        acc += memobj->get_primitive_desc().get_size();
     }
     return acc;
 }
