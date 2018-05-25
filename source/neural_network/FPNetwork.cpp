@@ -117,14 +117,14 @@ AbsNet *FPNetwork::addPool2D(const int *kernel_size, Pooling pooling_algorithm, 
     if (padding == Padding::SAME){
         pool_out_shape = {in_shape[0],
                      in_shape[1],
-                     in_shape[2]/(pool_kernel[0]),
-                     in_shape[3]/(pool_kernel[1])},
+                     in_shape[2]/(pool_strides[0]),
+                     in_shape[3]/(pool_strides[1])},
         pool_padding = {(kernel_size[0] - 1)/2, (kernel_size[1] - 1)/2};
     } else {
         pool_out_shape = {in_shape[0],
                      in_shape[1],
-                     ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_kernel[0])),
-                     ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_kernel[1]))};
+                     ceil((in_shape[2]-kernel_size[0]+1)/(float)(pool_strides[0])),
+                     ceil((in_shape[3]-kernel_size[1]+1)/(float)(pool_strides[1]))};
         pool_padding = {0, 0};
     }
     std::cout << "Initialized pool dimensions" << std::endl;
