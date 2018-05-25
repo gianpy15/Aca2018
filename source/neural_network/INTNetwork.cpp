@@ -205,3 +205,8 @@ void INTNetwork::setup_net(){
     }
     temporary_memories.clear();
 }
+
+void INTNetwork::createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) {
+    std::cerr << "Function not implemented" << std::endl;
+    exit(1);
+}

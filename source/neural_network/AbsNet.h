@@ -31,6 +31,7 @@ public:
 
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding);
     AbsNet * addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
+    AbsNet * addFC(int outputs);
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
     void run_net();
     void run_net(int times);
@@ -68,6 +69,10 @@ protected:
                               memory::dims pool_strides,
                               memory::dims pool_padding,
                               algorithm pool_algorithm)= 0;
+
+    virtual void createFC(memory::dims fc_dst_tz,
+                          memory::dims fc_weights_tz,
+                          memory::dims fc_bias_tz)= 0;
 };
 
 

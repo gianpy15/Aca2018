@@ -22,9 +22,11 @@ private:
                       memory::dims conv_dst_tz,
                       memory::dims padding) override;
 
-protected:
     void createPool2D(memory::dims pool_dst_tz, memory::dims pool_kernel, memory::dims pool_strides,
                       memory::dims pool_padding, algorithm pool_algorithm) override;
+
+    void createFC(memory::dims fc_dst_tz, memory::dims fc_weights_tz, memory::dims fc_bias_tz) override;
+
 
 };
 
