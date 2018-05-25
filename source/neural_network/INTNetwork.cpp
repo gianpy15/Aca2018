@@ -53,7 +53,7 @@ void INTNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weight
     /* create memory for user data */
     auto conv_user_weights_memory
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
-                             memory::format::goihw },
+                             memory::format::oihw },
                            cpu_engine },
                          conv_weights->data());
 
