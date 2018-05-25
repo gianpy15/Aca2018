@@ -42,7 +42,7 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
-    test_net(&INTNetwork::createNet, 10);
+    //test_net(&INTNetwork::createNet, 10);
     test_net(&FPNetwork::createNet, 10);
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);

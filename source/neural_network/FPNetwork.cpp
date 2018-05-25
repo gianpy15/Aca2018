@@ -21,6 +21,10 @@ FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     last_output_shape = input_tz;
 }
 
+AbsNet * FPNetwork::createNet(const memory::dims &input_size) {
+    return new FPNetwork(input_size);
+}
+
 void FPNetwork::createConv2D(memory::dims conv_src_tz, memory::dims conv_weights_tz, memory::dims conv_bias_tz,
                              memory::dims conv_strides, memory::dims conv_dst_tz, memory::dims padding) {
 
