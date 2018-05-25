@@ -27,7 +27,7 @@ AbsNet * setup_test_net(AbsNet* baseNet){
 
 
 AbsNet * test_net(AbsNet* (*initializer)(const memory::dims&), int repetitions) {
-    AbsNet *net = initializer({10, 3, 40, 40});
+    AbsNet *net = initializer({1, 3, 227, 227});
     net = setup_test_net(net);
     net->run_net(repetitions);
     return net;
