@@ -21,6 +21,10 @@ INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {
     last_output_shape = input_tz;
 }
 
+AbsNet * INTNetwork::createNet(const memory::dims &input_size) {
+    return new INTNetwork(input_size);
+}
+
 AbsNet * INTNetwork::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
 
     memory::dims in_shape = last_output_shape;

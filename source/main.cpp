@@ -14,29 +14,36 @@ AbsNet * setup_test_net(AbsNet* baseNet){
     std::cout << "Network initialized" << std::endl;
     baseNet->addConv2D(64, kernel_11x11, no_stride, Padding::VALID);
     std::cout << "Added first convolution" << std::endl;
-    baseNet->addConv2D(64, kernel_3x3, no_stride, Padding::VALID);
+    baseNet->addPool2D(kernel_3x3, Pooling::MAX, Padding::VALID);
+    std::cout << "Added first pooling" << std::endl;
+    baseNet->addConv2D(64, kernel_3x3, no_stride, Padding::SAME);
     std::cout << "Added second convolution" << std::endl;
+    baseNet->addPool2D(kernel_2x2, Pooling::MAX, Padding::SAME);
+    std::cout << "Added second pooling" << std::endl;
     baseNet->setup_net();
     std::cout << "Network setup successful!" << std::endl;
     return baseNet;
 }
 
-AbsNet * test_fpNet(int repetitions) {
-    AbsNet *net = new FPNetwork({1, 3, 227, 227});
+
+AbsNet * test_net(AbsNet* (*initializer)(const memory::dims&), int repetitions) {
+    AbsNet *net = initializer({1, 3, 227, 227});
     net = setup_test_net(net);
     net->run_net(repetitions);
     return net;
+}
+
+AbsNet * test_fpNet(int repetitions) {
+    return test_net(&FPNetwork::createNet, repetitions);
 }
 
 AbsNet * test_intNet(int repetitions) {
-    AbsNet *net = new INTNetwork({1, 3, 227, 227});
-    net = setup_test_net(net);
-    net->run_net(repetitions);
-    return net;
+    return test_net(&INTNetwork::createNet, repetitions);
 }
 
-
 int main() {
-    AbsNet *net = test_fpNet(1);
-    AbsNet *net2 = test_intNet(1);
+    test_net(&INTNetwork::createNet, 10);
+    test_net(&FPNetwork::createNet, 10);
+    //AbsNet *net = test_fpNet(1);
+   // AbsNet *net2 = test_intNet(1);
 }
