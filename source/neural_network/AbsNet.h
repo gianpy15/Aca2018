@@ -11,6 +11,8 @@
 #include <cmath>
 
 #include "mkldnn.hpp"
+#include "../mem_management/mem_management.h"
+#include "../mem_management/mem_base.h"
 
 using namespace mkldnn;
 
@@ -41,18 +43,15 @@ public:
     bool fold_memory = true;
     ~AbsNet();
 protected:
+    ParametersManager *parametersManager;
+    DataPipelineManager *dataPipelineManager;
     memory::dims input_tz;
-    std::vector<memory*> data_pipeline_memobjs;
-    std::vector<memory*> parameters_memobjs;
-    std::vector<memory*> temporary_memobjs;
-    std::vector<std::vector<float>*> tmp_vecs;
     std::vector<primitive> inference_ops;
     std::vector<primitive> setup_ops;
-    std::vector<float> * generate_vec(const memory::dims&);
-    memory * last_output;
+    membase * last_output;
     /// Format: { batch, channels, width, height }
     memory::dims last_output_shape;
-    engine cpu_engine = engine(engine::cpu, 0);
+    engine cpu_engine = get_glob_engine();
     /* REORDERING FUNCTIONS:
      * these functions receive memories to map into a destination/format and return the destination memory
      */
@@ -83,8 +82,8 @@ protected:
                               const memory::dims& conv_strides,
                               const memory::dims& conv_dst_tz,
                               const memory::dims& padding,
-                              memory* weights,
-                              memory* bias)= 0;
+                              membase* weights,
+                              membase* bias)= 0;
     void createConv2D(const memory::dims& conv_src_tz,
                       const memory::dims& conv_weights_tz,
                       const memory::dims& conv_bias_tz,
@@ -98,7 +97,7 @@ protected:
                               const memory::dims& pool_padding,
                               algorithm pool_algorithm)= 0;
     virtual void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                          memory * weights, memory * bias)=0;
+                          membase * weights, membase * bias)=0;
 
     void createFC(const memory::dims& fc_dst_tz,
                   const memory::dims& fc_weights_tz,

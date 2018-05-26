@@ -37,11 +37,7 @@ void AbsNet::setup_net() {
         }
     }
 
-    for (auto memobj : temporary_memobjs){
-        free(memobj->get_data_handle());
-        delete memobj;
-    }
-    temporary_memobjs.clear();
+    parametersManager->setup_done();
     /*
     for (auto memobj : tmp_vecs){
         memobj->clear();
@@ -50,15 +46,19 @@ void AbsNet::setup_net() {
 }
 
 AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
-    auto user_src = generate_vec(input_size);
+    /*auto user_src = generate_vec(input_size);
     auto user_src_memory
             = new memory({ { { input_size }, memory::data_type::f32,
                              memory::format::nchw },
                            cpu_engine },
                          user_src->data());
     data_pipeline_memobjs.push_back(user_src_memory);
-    last_output = user_src_memory;
+    last_output = user_src_memory; */
     last_output_shape = input_tz;
+    dataPipelineManager = new DataPipelineManager(inference_ops);
+    parametersManager = new ParametersManager(setup_ops);
+    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
+    last_output = dataPipelineManager->allocate_src(memdesc);
 }
 
 AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
@@ -136,6 +136,7 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
 
 size_t AbsNet::total_memory_usage() {
     size_t acc = 0;
+    /*
     for (auto memobj: data_pipeline_memobjs){
         acc += memobj->get_primitive_desc().get_size();
     }
@@ -147,53 +148,21 @@ size_t AbsNet::total_memory_usage() {
     }
     for (auto memobj: parameters_memobjs){
         acc += memobj->get_primitive_desc().get_size();
-    }
+    }*/
+    acc += parametersManager->memory_usage();
+    acc += dataPipelineManager->memory_usage();
     return acc;
 }
 
 size_t AbsNet::parameters_memory_usage() {
-    size_t acc = 0;
-    for (auto memobj: parameters_memobjs){
-        acc += memobj->get_primitive_desc().get_size();
-    }
-    return acc;
-}
-
-std::vector<float>* AbsNet::generate_vec(const memory::dims& dims) {
-
-    size_t size=1;
-    for (auto elem: dims)
-        size *= elem;
-    auto vec = new std::vector<float>(size);
-    tmp_vecs.push_back(vec);
-    return vec;
+    return parametersManager->memory_usage();
 }
 
 AbsNet::~AbsNet() {
-
-    for (auto memobj : temporary_memobjs){
-        //delete memobj->get_data_handle();
-        delete memobj;
-    }
-    temporary_memobjs.clear();
-
-    for (auto memobj : data_pipeline_memobjs){
-        //delete memobj->get_data_handle();
-        delete memobj;
-    }
-    data_pipeline_memobjs.clear();
-
-    for (auto memobj : parameters_memobjs){
-        //delete memobj->get_data_handle();
-        delete memobj;
-    }
-    parameters_memobjs.clear();
-
-    for (auto memobj : tmp_vecs){
-        memobj->clear();
-    }
-    tmp_vecs.clear();
-
+    inference_ops.clear();
+    setup_ops.clear();
+    delete parametersManager;
+    delete dataPipelineManager;
 }
 
 AbsNet *AbsNet::addFC(int outputs) {
@@ -222,10 +191,10 @@ void AbsNet::createConv2D(const memory::dims& conv_src_tz,
                           const memory::dims& conv_strides,
                           const memory::dims& conv_dst_tz,
                           const memory::dims& padding){
+    /*
     auto conv_weights = generate_vec(conv_weights_tz);
     auto conv_bias = generate_vec(conv_bias_tz);
 
-    /* create memory for user data */
     auto conv_weights_memory
             = new memory({ { { conv_weights_tz }, memory::data_type::f32,
                              memory::format::oihw },
@@ -237,6 +206,9 @@ void AbsNet::createConv2D(const memory::dims& conv_src_tz,
                              memory::format::x },
                            cpu_engine },
                          conv_bias->data());
+    */
+    auto conv_weights_memory = new membase(conv_weights_tz, memory::format::oihw, memory::data_type::f32, nullptr, 1.f);
+    auto conv_bias_memory = new membase(conv_bias_tz, memory::format::x, memory::data_type::f32, nullptr, 1.f);
     createConv2D(conv_src_tz,
                  conv_weights_tz,
                  conv_bias_tz,
@@ -248,10 +220,10 @@ void AbsNet::createConv2D(const memory::dims& conv_src_tz,
 }
 
 void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz) {
+    /*
     auto weights = generate_vec(fc_weights_tz);
     auto bias = generate_vec(fc_bias_tz);
 
-    /* create memory for user data */
     auto weights_memory
             = new memory({ { { fc_weights_tz }, memory::data_type::f32,
                              memory::format::nc },
@@ -263,7 +235,9 @@ void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weig
                              memory::format::x },
                            cpu_engine },
                          bias->data());
-
+    */
+    auto weights_memory = new membase(fc_weights_tz, memory::format::nc, memory::data_type::f32, nullptr, 1.f);
+    auto bias_memory = new membase(fc_bias_tz, memory::format::x, memory::data_type::f32, nullptr, 1.f);
     createFC(fc_dst_tz, fc_weights_tz, fc_bias_tz, weights_memory, bias_memory);
 }
 
