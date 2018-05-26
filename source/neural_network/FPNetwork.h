@@ -19,14 +19,14 @@ private:
                       const memory::dims& conv_strides,
                       const memory::dims& conv_dst_tz,
                       const memory::dims& padding,
-                      memory* conv_user_weights_memory,
-                      memory* conv_user_bias_memory) override;
+                      membase* conv_user_weights_memory,
+                      membase* conv_user_bias_memory) override;
 
     void createPool2D(const memory::dims& pool_dst_tz, const memory::dims& pool_kernel, const memory::dims& pool_strides,
                       const memory::dims& pool_padding, algorithm pool_algorithm) override;
 
     void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                  memory* user_weights, memory* user_bias) override;
+                  membase* user_weights, membase* user_bias) override;
 
 
 };
