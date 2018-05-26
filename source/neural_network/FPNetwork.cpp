@@ -36,28 +36,6 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     auto conv_prim_desc
             = convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
-    /* reorder memory if necessary
-    auto tmp = conv_prim_desc.src_primitive_desc();
-    auto conv_src_memory = make_conditional_reorder(inference_ops, last_output, tmp, data_pipeline_memobjs);
-    tmp = conv_prim_desc.weights_primitive_desc();
-    auto conv_weights_memory = make_conditional_reorder(setup_ops, conv_user_weights_memory, tmp, temporary_memobjs);
-    tmp = conv_prim_desc.bias_primitive_desc();
-    auto conv_bias_memory = make_conditional_reorder(setup_ops, conv_user_bias_memory, tmp, temporary_memobjs);
-
-    memory* conv_dst_memory;
-    if (last_output->get_primitive_desc() == conv_prim_desc.dst_primitive_desc()
-       // && last_output != conv_src_memory){
-            ){
-        std::cout << "MEMORY FOLDED ONCE" << std::endl;
-        conv_dst_memory = last_output;
-    }
-    else {
-        conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
-        data_pipeline_memobjs.push_back(conv_dst_memory);
-    }
-    parameters_memobjs.push_back(conv_weights_memory);
-    parameters_memobjs.push_back(conv_user_bias_memory);
-     */
     auto tmp = conv_prim_desc.src_primitive_desc();
     auto conv_src_memory = dataPipelineManager->allocate_src(tmp);
     tmp = conv_prim_desc.weights_primitive_desc();
@@ -71,12 +49,9 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
                                       *conv_weights_memory->memref, *conv_bias_memory->memref,
                                       *conv_dst_memory->memref));
 
-    /* AlexNet: ReLu
-    * {batch, 256, 27, 27} -> {batch, 256, 27, 27}
-    */
+
     const float negative2_slope = 1.0f;
 
-    /* create relu primitive and add it to inference_ops */
     auto relu2_desc = eltwise_forward::desc(prop_kind::forward_inference,
                                             algorithm::eltwise_relu,
                                             conv_dst_memory->memref->get_primitive_desc().desc(), negative2_slope);
@@ -102,9 +77,6 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
     auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
     auto tmp = pool1_pd.dst_primitive_desc();
     auto pool_dst_memory = dataPipelineManager->allocate_dst(tmp, last_output->scale);
-    //auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
-    //data_pipeline_memobjs.push_back(pool_dst_memory);
-    /* create pooling primitive an add it to inference_ops */
 
     inference_ops.push_back(
             pooling_forward(pool1_pd, *last_output->memref, *pool_dst_memory->memref));
@@ -116,32 +88,22 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
 void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
                          membase* fc_user_weights_memory, membase* fc_user_bias_memory) {
 
-    /* create memory descriptors for convolution data w/ no specified format
-     */
+
     auto fc_bias_md = memory::desc({ fc_bias_tz }, memory::data_type::f32, memory::format::any);
     auto fc_weights_md = memory::desc({ fc_weights_tz }, memory::data_type::f32, memory::format::any);
     auto fc_dst_md = memory::desc({ fc_dst_tz }, memory::data_type::f32, memory::format::any);
 
-    /* create a inner_product */
     auto fc_desc = inner_product_forward::desc(prop_kind::forward_inference, last_output->memref->get_primitive_desc().desc(), fc_weights_md, fc_bias_md, fc_dst_md);
     auto fc_prim_desc = inner_product_forward::primitive_desc(fc_desc, cpu_engine);
 
     auto tmp = fc_prim_desc.weights_primitive_desc();
     auto fc_weights_memory = parametersManager->allocate_parameters(tmp, fc_user_weights_memory);
-    //auto fc_weights_memory = make_conditional_reorder(setup_ops, fc_user_weights_memory, tmp, temporary_memobjs);
     tmp = fc_prim_desc.src_primitive_desc();
     auto fc_src_memory = dataPipelineManager->allocate_src(tmp);
-    //auto fc_src_memory = make_conditional_reorder(inference_ops, last_output, tmp, data_pipeline_memobjs);
     tmp = fc_prim_desc.bias_primitive_desc();
     auto fc_bias_memory = parametersManager->allocate_parameters(tmp, fc_user_bias_memory);
-    //auto fc_bias_memory = make_conditional_reorder(setup_ops, fc_user_bias_memory, tmp, temporary_memobjs);
     tmp = fc_prim_desc.dst_primitive_desc();
     auto fc_dst_memory = dataPipelineManager->allocate_dst(tmp);
-    //auto fc_dst_memory = new memory(fc_prim_desc.dst_primitive_desc());
-    //data_pipeline_memobjs.push_back(fc_dst_memory);
-    //parameters_memobjs.push_back(fc_weights_memory);
-    //parameters_memobjs.push_back(fc_bias_memory);
-    /* create convolution primitive and add it to inference_ops */
     inference_ops.push_back(inner_product_forward(fc_prim_desc, *fc_src_memory->memref,
                                         *fc_weights_memory->memref, *fc_bias_memory->memref, *fc_dst_memory->memref));
 
