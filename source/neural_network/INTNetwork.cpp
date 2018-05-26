@@ -8,18 +8,7 @@
 #include <iostream>
 #include <mkldnn_types.h>
 
-INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {
-    input_tz = input_size;
-    auto user_src = generate_vec(input_size);
-    auto user_src_memory
-            = new memory({ { { input_size }, memory::data_type::f32,
-                             memory::format::nchw },
-                           cpu_engine },
-                         user_src->data());
-    memobjs.push_back(user_src_memory);
-    last_output = user_src_memory;
-    last_output_shape = input_tz;
-}
+INTNetwork::INTNetwork(const memory::dims &input_size) : AbsNet(input_size) {}
 
 AbsNet * INTNetwork::createNet(const memory::dims &input_size) {
     return new INTNetwork(input_size);
@@ -86,17 +75,17 @@ void INTNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dim
     auto conv_bias_memory = new memory(conv_prim_desc.bias_primitive_desc());
     auto conv_dst_memory = new memory(conv_prim_desc.dst_primitive_desc());
 
-    make_reorder(net, last_output, conv_src_memory, src_mask, src_scales);
-    make_reorder(net_weights, conv_user_weights_memory, conv_weights_memory, weight_mask, weight_scales);
-    make_reorder(net_weights, conv_user_bias_memory, conv_bias_memory, bias_mask, bias_scales);
+    make_reorder(inference_ops, last_output, conv_src_memory, src_mask, src_scales);
+    make_reorder(setup_ops, conv_user_weights_memory, conv_weights_memory, weight_mask, weight_scales);
+    make_reorder(setup_ops, conv_user_bias_memory, conv_bias_memory, bias_mask, bias_scales);
 
-    memobjs.push_back(conv_src_memory);
-    memobjs.push_back(conv_weights_memory);
-    memobjs.push_back(conv_dst_memory);
-    memobjs.push_back(conv_bias_memory);
+    data_pipeline_memobjs.push_back(conv_src_memory);
+    parameters_memobjs.push_back(conv_weights_memory);
+    data_pipeline_memobjs.push_back(conv_dst_memory);
+    parameters_memobjs.push_back(conv_bias_memory);
 
-    /* create convolution primitive and add it to net */
-    net.push_back( convolution_forward(conv_prim_desc, *conv_src_memory,
+    /* create convolution primitive and add it to inference_ops */
+    inference_ops.push_back( convolution_forward(conv_prim_desc, *conv_src_memory,
                                       *conv_weights_memory, *conv_bias_memory, *conv_dst_memory));
 
     auto fpoutput = generate_vec(conv_dst_tz);
@@ -107,9 +96,9 @@ void INTNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dim
               cpu_engine },
             fpoutput->data());
 
-    memobjs.push_back(fp_dst_memory);
+    data_pipeline_memobjs.push_back(fp_dst_memory);
 
-    make_reorder(net, conv_dst_memory, fp_dst_memory, dst_mask, dst_scales);
+    make_reorder(inference_ops, conv_dst_memory, fp_dst_memory, dst_mask, dst_scales);
     last_output = fp_dst_memory;
     last_output_shape = conv_dst_tz;
 }
@@ -126,9 +115,9 @@ void INTNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dim
                                             pool_padding, padding_kind::zero);
     auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
     auto pool_dst_memory = new memory(pool1_pd.dst_primitive_desc());
-    memobjs.push_back(pool_dst_memory);
-    /* create pooling primitive an add it to net */
-    net.push_back(
+    data_pipeline_memobjs.push_back(pool_dst_memory);
+    /* create pooling primitive an add it to inference_ops */
+    inference_ops.push_back(
             pooling_forward(pool1_pd, *last_output, *pool_dst_memory));
 
     last_output = pool_dst_memory;

@@ -5,11 +5,11 @@
 #include "AbsNet.h"
 
 void AbsNet::run_net(int times) {
-    if (!net.empty()) {
+    if (!inference_ops.empty()) {
         try {
             auto start_time = std::chrono::high_resolution_clock::now();
             for (int i=0; i<times; i++) {
-                stream(stream::kind::eager).submit(net).wait();
+                stream(stream::kind::eager).submit(inference_ops).wait();
             }
             auto end_time = std::chrono::high_resolution_clock::now();
             std::cout << "Runs: " << times << std::endl
@@ -27,9 +27,9 @@ void AbsNet::run_net(){
 }
 
 void AbsNet::setup_net() {
-    if (!net_weights.empty()) {
+    if (!setup_ops.empty()) {
         try {
-            stream(stream::kind::eager).submit(net_weights).wait();
+            stream(stream::kind::eager).submit(setup_ops).wait();
         } catch (error &e) {
             std::cerr << "status: " << e.status << std::endl;
             std::cerr << "message: " << e.message << std::endl;
@@ -42,15 +42,23 @@ void AbsNet::setup_net() {
         delete memobj;
     }
     temporary_memobjs.clear();
-
+    /*
     for (auto memobj : tmp_vecs){
         memobj->clear();
     }
-    tmp_vecs.clear();
+    tmp_vecs.clear(); */
 }
 
 AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
-
+    auto user_src = generate_vec(input_size);
+    auto user_src_memory
+            = new memory({ { { input_size }, memory::data_type::f32,
+                             memory::format::nchw },
+                           cpu_engine },
+                         user_src->data());
+    data_pipeline_memobjs.push_back(user_src_memory);
+    last_output = user_src_memory;
+    last_output_shape = input_tz;
 }
 
 AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
@@ -128,13 +136,24 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
 
 size_t AbsNet::total_memory_usage() {
     size_t acc = 0;
-    for (auto memobj: memobjs){
+    for (auto memobj: data_pipeline_memobjs){
         acc += memobj->get_primitive_desc().get_size();
     }
     for (auto memobj: tmp_vecs){
         acc += memobj->size() * sizeof(float);
     }
     for (auto memobj: temporary_memobjs){
+        acc += memobj->get_primitive_desc().get_size();
+    }
+    for (auto memobj: parameters_memobjs){
+        acc += memobj->get_primitive_desc().get_size();
+    }
+    return acc;
+}
+
+size_t AbsNet::parameters_memory_usage() {
+    size_t acc = 0;
+    for (auto memobj: parameters_memobjs){
         acc += memobj->get_primitive_desc().get_size();
     }
     return acc;
@@ -158,11 +177,17 @@ AbsNet::~AbsNet() {
     }
     temporary_memobjs.clear();
 
-    for (auto memobj : memobjs){
+    for (auto memobj : data_pipeline_memobjs){
         //delete memobj->get_data_handle();
         delete memobj;
     }
-    memobjs.clear();
+    data_pipeline_memobjs.clear();
+
+    for (auto memobj : parameters_memobjs){
+        //delete memobj->get_data_handle();
+        delete memobj;
+    }
+    parameters_memobjs.clear();
 
     for (auto memobj : tmp_vecs){
         memobj->clear();

@@ -37,14 +37,17 @@ public:
     void run_net(int times);
     void setup_net();
     size_t total_memory_usage();
+    size_t parameters_memory_usage();
+    bool fold_memory = true;
     ~AbsNet();
 protected:
     memory::dims input_tz;
-    std::vector<memory*> memobjs;
+    std::vector<memory*> data_pipeline_memobjs;
+    std::vector<memory*> parameters_memobjs;
     std::vector<memory*> temporary_memobjs;
     std::vector<std::vector<float>*> tmp_vecs;
-    std::vector<primitive> net;
-    std::vector<primitive> net_weights;
+    std::vector<primitive> inference_ops;
+    std::vector<primitive> setup_ops;
     std::vector<float> * generate_vec(const memory::dims&);
     memory * last_output;
     /// Format: { batch, channels, width, height }

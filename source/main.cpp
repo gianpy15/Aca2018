@@ -18,7 +18,7 @@ AbsNet * setup_test_net(AbsNet* baseNet){
     baseNet->addPool2D(kernel_3x3, Pooling::MAX, Padding::VALID);
     // std::cout << "Added first pooling" << std::endl;
     baseNet->addConv2D(256, kernel_5x5, no_stride, Padding::SAME);
-    for (int i=0; i<1; i++)
+    for (int i=0; i<5; i++)
         baseNet->addConv2D(512, kernel_3x3, no_stride, Padding::SAME);
     // std::cout << "Added second convolution" << std::endl;
     baseNet->addPool2D(kernel_2x2, Pooling::MAX, Padding::SAME);
@@ -46,22 +46,16 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
-    size_t init_mem = getCurrentMemUsage();
-    std::cout << "Memory base: " << init_mem/1000 << "MB" << std::endl;
-
     std::cout << "Testing FP network" << std::endl;
     auto fpnet = test_net(&FPNetwork::createNet, 1);
-    std::cout << "Memory for fp32 net (coll): " << fpnet->total_memory_usage()/1000000 << "MB" << std::endl;
-    size_t after_fpnet = getCurrentMemUsage();
+    std::cout << "Memory for fp32 net (tot): " << fpnet->total_memory_usage()/1000000 << "MB" << std::endl;
+    std::cout << "Memory for fp32 net (par): " << fpnet->parameters_memory_usage()/1000 << "KB" << std::endl;
     delete fpnet;
-    std::cout << "Memory for fp32 net (proc): " << (after_fpnet - init_mem)/1000 << "MB" << std::endl;
 
     std::cout << "Testing Int network" << std::endl;
     auto intnet = test_net(&INTNetwork::createNet, 1);
-    std::cout << "Memory for int8 net (coll): " << intnet->total_memory_usage()/1000000 << "MB" << std::endl;
-    size_t after_intnet = getCurrentMemUsage();
-    delete intnet;
-    std::cout << "Memory for int8 net (proc): " << (after_intnet - after_fpnet)/1000 << "MB" << std::endl;
+    std::cout << "Memory for int8 net (tot): " << intnet->total_memory_usage()/1000000 << "MB" << std::endl;
+    std::cout << "Memory for int8 net (par): " << intnet->parameters_memory_usage()/1000 << "KB" << std::endl;
 
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);

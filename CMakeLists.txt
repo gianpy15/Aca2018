@@ -31,7 +31,7 @@ endif()
 
 
 
-add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h)
+add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp)
 add_executable(Intel source/from_intel_example.cpp)
 add_executable(IntelQuant source/intel_int8_example.cpp)
 add_executable(Tests tests/FPNetTest.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h)
