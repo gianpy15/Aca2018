@@ -8,4 +8,4 @@ gen
 
 cmake-build-debug
 resources/*
-!resources/get_alexnet.sh
+!resources/*.sh
