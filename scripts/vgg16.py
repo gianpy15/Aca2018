@@ -2,8 +2,7 @@ from keras.applications.vgg16 import VGG16
 import keras as K
 import os
 import h5py
-
-file_path = '../resources/vgg16.h5'
+import json
 
 
 def create_weights_file(name: str, keras_model: K.models.Model, overwrite=True, compression_level=0):
@@ -42,6 +41,25 @@ def create_weights_file(name: str, keras_model: K.models.Model, overwrite=True, 
             print('Added layer ' + layer.name)
 
 
+def create_model_file(name: str, keras_model: K.models.Model, overwrite=True):
+    """
+        given a keras model with parameters, this method will create a txt file
+        in the resources with all the layers names in order.
+        :param name: is the file name, it is not necessary to specify the path or the file extension
+        :param keras_model: is the model to be saved
+        :param overwrite: is true if u want to overwrite the file in case it already exists
+        :return: NoneObject
+        """
+    path = '../resources/' + name + '.txt'
+
+    if os.path.isfile(path) and not overwrite:
+        return
+
+    with open(path, 'w') as file:
+        for layer in keras_model.layers:
+            file.write(layer.name + '\n')
+
+
 def read_weight_file(name):
     path = '../resources/' + name + '.h5'
     with h5py.File(name=path, mode='a') as file:
@@ -52,3 +70,4 @@ if __name__ == '__main__':
     model = VGG16()
     create_weights_file(name='vgg', keras_model=model)
     read_weight_file('vgg')
+    create_model_file('vgg', keras_model=model)
