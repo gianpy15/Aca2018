@@ -1,8 +1,8 @@
-from keras.applications.vgg16 import VGG16
-import keras as K
 import os
+
 import h5py
-import json
+import keras as K
+from keras.applications.vgg16 import VGG16
 
 
 def create_weights_file(name: str, keras_model: K.models.Model, overwrite=True, compression_level=0):
@@ -57,7 +57,10 @@ def create_model_file(name: str, keras_model: K.models.Model, overwrite=True):
 
     with open(path, 'w') as file:
         for layer in keras_model.layers:
-            file.write(layer.name + '\n')
+            file.write(layer.name)
+            if 'pool' in layer.name:
+                file.write('_' + str(layer.pool_size[0]) + 'x' + str(layer.pool_size[1]))
+            file.write('\n')
 
 
 def read_weight_file(name):
