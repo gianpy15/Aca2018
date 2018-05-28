@@ -52,18 +52,6 @@ protected:
     /// Format: { batch, channels, width, height }
     memory::dims last_output_shape;
     engine cpu_engine = get_glob_engine();
-    /* REORDERING FUNCTIONS:
-     * these functions receive memories to map into a destination/format and return the destination memory
-     */
-    // make a forced reordering, use mask and scales only if quantization is needed
-    static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst,
-                                    int mask, const std::vector<float>& scales);
-    // make a forced reordering, if data type is not fp32 for both src and dst it will segfault
-    static memory * make_reorder(std::vector<primitive>& netops, memory* src, memory* dst);
-    // evaluate the need of reordering, and reorder iff necessary. Care about source memtracking
-    // if the destination is different.
-    static memory * make_conditional_reorder(std::vector<primitive> &netops, memory *src, memory::primitive_desc &dst,
-                                             std::vector<memory *> &memtracker);
 
     /**
      * This method will be called from addConv2D and adds a convolution layer to the network

@@ -58,6 +58,7 @@ int main() {
     std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
     delete fpnet;
     std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
+    after_fpnet = getCurrentMemUsage();
 
     std::cout << "Testing Int network" << std::endl;
     auto intnet = test_net(&INTNetwork::createNet, 1);

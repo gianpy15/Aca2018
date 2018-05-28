@@ -30,17 +30,26 @@ if(CMAKE_VERSION VERSION_LESS 2.8.11)
 endif()
 
 
+link_directories(resources/hdf5/HDF_Group/HDF5/1.10.1/lib)
 
 add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp)
 add_executable(Intel source/from_intel_example.cpp)
 add_executable(IntelQuant source/intel_int8_example.cpp)
-add_executable(Tests tests/FPNetTest.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h)
+add_executable(Tests tests/FPNetTest.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp)
+add_executable(ReadData source/io/h5io.cpp source/io/h5io.h)
 
 target_link_libraries(IntelQuant mkldnn)
 target_link_libraries(Intel mkldnn)
 target_link_libraries(Aca2018 mkldnn)
 target_link_libraries(Tests gtest gmock mkldnn)
+target_link_libraries(ReadData hdf5_hl_cpp)
+target_link_libraries(ReadData hdf5_cpp)
+target_link_libraries(ReadData hdf5)
+target_link_libraries(ReadData szip)
+target_link_libraries(ReadData z)
+target_link_libraries(ReadData dl)
 
 include_directories(cmake-build-debug/googletest-src/googletest/include)
+include_directories(resources/hdf5/HDF_Group/HDF5/1.10.1/include)
 include_directories(/usr/local/include)
 include_directories(source/neural_network)
