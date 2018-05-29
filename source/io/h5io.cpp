@@ -10,7 +10,14 @@ H5io::H5io(string file_name) : H5_NAME(file_name) {
     this->TXT_NAME = "../resources/" + file_name + ".txt";
     this->H5_NAME = H5std_string(path);
     this->ROOT = H5std_string("root");
-    this->net = new H5File(this->H5_NAME, H5F_ACC_RDONLY);
+    try {
+        this->net = new H5File(this->H5_NAME, H5F_ACC_RDONLY);
+    } catch (H5::FileIException) {
+        cerr << "unable to open file at " << path << endl;
+        exit(-1);
+    };
+
+
 
     /// Creating array with all layers name
     string line;
@@ -19,17 +26,20 @@ H5io::H5io(string file_name) : H5_NAME(file_name) {
         while (getline(layersFile, line))
             this->layers.push_back(line);
         layersFile.close();
+    } else {
+        cerr << "Unable to open file at " << this->TXT_NAME << endl;
+        exit(-1);
     }
 
     this->layers_iter = this->layers.begin();
 }
 
-LayerInfo *H5io::get_layer(string layer_name, LayerType layer_type) {
+LayerDescriptor *H5io::get_layer(string layer_name, LayerType layer_type) {
     const H5std_string &layerName(layer_name);
     const H5std_string weightsStr("weights");
     const H5std_string biasesStr("biases");
 
-    auto *layerDescriptor = new LayerInfo;
+    auto *layerDescriptor = new LayerDescriptor;
 
     switch (layer_type) {
         case INPUT:
@@ -86,9 +96,9 @@ LayerInfo *H5io::get_layer(string layer_name, LayerType layer_type) {
     return layerDescriptor;
 }
 
-LayerInfo *H5io::get_next() {
+LayerDescriptor *H5io::get_next() {
     string layer_name;
-    LayerInfo *layerDescriptor = nullptr;
+    LayerDescriptor *layerDescriptor = nullptr;
     if (this->layers_iter < this->layers.end()) {
         layer_name = *(this->layers_iter++);
         unsigned long long *pool_size = nullptr;
@@ -128,14 +138,18 @@ bool H5io::has_next() {
 
 H5io::~H5io() {
     delete this->net;
+    free(this);
 }
 
-int main() {
-    auto test = new H5io("vgg");
-    for (int i = 0; i < 40; i++) {
-        auto a = test->get_next();
-        if (a && a->layerType == POOL)
-            cout << a->poolSize[0] << " x " << a->poolSize[1] << endl;
-    }
-    delete test;
+LayerDescriptor::~LayerDescriptor() {
+    if (this->weightsDimensions)
+        free(this->weightsDimensions);
+    if (this->biasesDimensions)
+        free(this->biasesDimensions);
+    if (this->weights)
+        free(this->weights);
+    if (this->biases)
+        free(this->biases);
+    if (this->poolSize)
+        free(this->poolSize);
 }

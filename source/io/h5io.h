@@ -27,13 +27,15 @@ enum LayerType {
 
 
 
-struct LayerInfo {
+struct LayerDescriptor {
     LayerType layerType;
     float *biases = nullptr;
     float *weights = nullptr;
     unsigned long long *weightsDimensions = nullptr;
     unsigned long long *biasesDimensions = nullptr;
     unsigned long long *poolSize = nullptr;
+
+    virtual ~LayerDescriptor();
 };
 
 class H5io {
@@ -46,14 +48,12 @@ private:
     vector<string> layers;
     vector<string>::iterator layers_iter;
 
-    LayerInfo *get_layer(string layer_name, LayerType layer_type);
+    LayerDescriptor *get_layer(string layer_name, LayerType layer_type);
 
 public:
     explicit H5io(string file_name);
     virtual ~H5io();
-    LayerInfo *get_next();
+    LayerDescriptor *get_next();
     bool has_next();
 
 };
-
-int main();

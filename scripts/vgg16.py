@@ -71,6 +71,6 @@ def read_weight_file(name):
 
 if __name__ == '__main__':
     model = VGG16()
-    # create_weights_file(name='vgg', keras_model=model)
-    # read_weight_file('vgg')
-    create_model_file('vgg', keras_model=model)
+    create_weights_file(name='vgg', keras_model=model, overwrite=False)
+    read_weight_file('vgg')
+    create_model_file('vgg', keras_model=model, overwrite=False)
