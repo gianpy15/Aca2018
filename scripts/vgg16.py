@@ -23,7 +23,7 @@ def create_weights_file(name: str, keras_model: K.models.Model, overwrite=True, 
         return
 
     with h5py.File(name=path, mode='a') as file:
-        main_group = file.create_group(name=name)
+        main_group = file.create_group(name="root")
 
         for layer in keras_model.layers:
             group = main_group.create_group(name=layer.name)
@@ -59,7 +59,7 @@ def create_model_file(name: str, keras_model: K.models.Model, overwrite=True):
         for layer in keras_model.layers:
             file.write(layer.name)
             if 'pool' in layer.name:
-                file.write('_' + str(layer.pool_size[0]) + 'x' + str(layer.pool_size[1]))
+                file.write('.' + str(layer.pool_size[0]) + 'x' + str(layer.pool_size[1]))
             file.write('\n')
 
 
@@ -71,6 +71,6 @@ def read_weight_file(name):
 
 if __name__ == '__main__':
     model = VGG16()
-    create_weights_file(name='vgg', keras_model=model)
-    read_weight_file('vgg')
+    # create_weights_file(name='vgg', keras_model=model)
+    # read_weight_file('vgg')
     create_model_file('vgg', keras_model=model)
