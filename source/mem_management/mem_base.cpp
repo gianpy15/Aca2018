@@ -2,9 +2,11 @@
 // Created by luca on 26/05/18.
 //
 
+#include <mkldnn_types.h>
 #include "mkldnn_types.h"
 #include "mkldnn.hpp"
 #include "mem_base.h"
+#include <iostream>
 
 using namespace mkldnn;
 
@@ -39,4 +41,15 @@ membase::membase(const memory::dims &dims, memory::format fmt, memory::data_type
 
 membase::~membase() {
     delete memref;
+}
+
+std::vector<int> membase::get_shape() {
+    int ndims = memref->get_primitive_desc().desc().data.ndims;
+    int* elems = memref->get_primitive_desc().desc().data.dims;
+    std::vector<int> dims(ndims);
+    for (int i=0; i<ndims; i++) {
+        dims[i] = elems[i]; // NO IDEA WHY THE DIMS ARRAY DESCRIPTOR IS FULL OF ZEROES!
+    }
+    std::cerr << "Called membase::get_shape. This function is not working, don't call it!" << std::endl;
+    return dims;
 }

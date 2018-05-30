@@ -31,9 +31,13 @@ class AbsNet {
 public:
     explicit AbsNet(const memory::dims &input_size);
 
+    AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding,
+            membase * weights, membase*bias);
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding);
     AbsNet * addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
     AbsNet * addFC(int outputs);
+    AbsNet * addFC(int outputs, membase * weights, membase * bias);
+
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
     void run_net();
     void run_net(int times);

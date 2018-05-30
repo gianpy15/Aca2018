@@ -19,6 +19,7 @@ struct membase{
     membase(memory::primitive_desc &pd, void* data);
     membase(const memory::dims&, memory::format, memory::data_type , void*data, float scales);
     membase(const memory::dims&, memory::format, memory::data_type , void*data);
+    std::vector<int> get_shape();
     ~membase();
 };
 
