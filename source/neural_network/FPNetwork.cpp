@@ -86,16 +86,16 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
 }
 
 void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                         membase* fc_user_weights_memory, membase* fc_user_bias_memory) {
+                         const memory::dims& fc_src_tz, membase* fc_user_weights_memory, membase* fc_user_bias_memory) {
 
 
     auto fc_bias_md = memory::desc({ fc_bias_tz }, memory::data_type::f32, memory::format::any);
     auto fc_weights_md = memory::desc({ fc_weights_tz }, memory::data_type::f32, memory::format::any);
     auto fc_dst_md = memory::desc({ fc_dst_tz }, memory::data_type::f32, memory::format::any);
+    auto fc_src_md = memory::desc({fc_src_tz}, memory::data_type::f32, memory::format::any);
 
-    auto fc_desc = inner_product_forward::desc(prop_kind::forward_inference, last_output->memref->get_primitive_desc().desc(), fc_weights_md, fc_bias_md, fc_dst_md);
+    auto fc_desc = inner_product_forward::desc(prop_kind::forward_inference, fc_src_md, fc_weights_md, fc_bias_md, fc_dst_md);
     auto fc_prim_desc = inner_product_forward::primitive_desc(fc_desc, cpu_engine);
-
     auto tmp = fc_prim_desc.weights_primitive_desc();
     auto fc_weights_memory = parametersManager->allocate_parameters(tmp, fc_user_weights_memory);
     tmp = fc_prim_desc.src_primitive_desc();
@@ -106,7 +106,6 @@ void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_w
     auto fc_dst_memory = dataPipelineManager->allocate_dst(tmp);
     inference_ops.push_back(inner_product_forward(fc_prim_desc, *fc_src_memory->memref,
                                         *fc_weights_memory->memref, *fc_bias_memory->memref, *fc_dst_memory->memref));
-
     last_output = fc_dst_memory;
     last_output_shape = fc_dst_tz;
 }

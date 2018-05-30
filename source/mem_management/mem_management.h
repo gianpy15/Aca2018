@@ -32,10 +32,10 @@ public:
     membase* get_last_output();
     membase* allocate_src(memory::primitive_desc& src_desc, float scale=1.f);
     membase* allocate_dst(memory::primitive_desc& dst_desc, float scale=1.f);
+    membase* last_output = nullptr;
 private:
     std::vector<primitive>& inference_ops;
     std::vector<membase*> allocated_memory = std::vector<membase*>();
-    membase* last_output = nullptr;
 
 };
 #endif //ACA2018_MEM_MANAGEMENT_H

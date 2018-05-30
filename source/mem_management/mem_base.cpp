@@ -53,3 +53,28 @@ std::vector<int> membase::get_shape() {
     std::cerr << "Called membase::get_shape. This function is not working, don't call it!" << std::endl;
     return dims;
 }
+
+memory::data_type membase::dtype(){
+    return get_cpp_dtype(memref->get_primitive_desc().desc().data.data_type);
+}
+
+memory::data_type get_cpp_dtype(mkldnn_data_type_t ctype){
+    switch(ctype){
+        case mkldnn_f32:
+            return memory::data_type::f32;
+        case mkldnn_s8:
+            return memory::data_type::s8;
+        case mkldnn_u8:
+            return memory::data_type::u8;
+        case mkldnn_s32:
+            return memory::data_type::s32;
+        case mkldnn_s16:
+            return memory::data_type::s16;
+        case mkldnn_data_type_undef:
+            return memory::data_type::data_undef;
+        default:
+            std::cerr << "Unknown ctype: " << ctype
+                      << "... Returining undefined cpptype" << std::endl;
+            return memory::data_type::data_undef;
+    }
+}

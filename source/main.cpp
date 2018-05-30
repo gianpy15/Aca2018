@@ -75,7 +75,12 @@ int main() {
    // AbsNet *net2 = test_intNet(1);
      */
 
-    memory::dims input = {1, 100, 1, 1};
+    memory::dims input = {1, 3, 227, 227};
     auto net = new FPNetwork(input);
+    net->addConv2D(32, kernel_3x3, no_stride, Padding::VALID);
+    net->addFC(64);
+    net->addFC(16);
+    net->setup_net();
+    net->run_net();
 
 }

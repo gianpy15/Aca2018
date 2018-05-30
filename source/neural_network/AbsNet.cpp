@@ -100,12 +100,12 @@ AbsNet::AbsNet(const std::string filename){
                 tmp_weights = new membase(tmp_wdims, memory::format::nc, memory::data_type::f32, tmp_layer->weights);
                 tmp_biases = new membase(tmp_wdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
 
-                // JUST A GUESS: NOT SURE WHETHER FORMAT IS (INPUT, OUTPUT) OR (OUTPUT, INPUT). GUESSED THE SECOND ONE.
+                // JUST A GUESS: NOT SURE WHETHER FORMAT IS (INPUT, OUTPUT) OR (OUTPUT, INPUT). GUESSED THE LAST ONE.
                 addFC(tmp_wdims[0], tmp_weights, tmp_biases); // TODO: CHECK CORRECT ORDER OF DIMS IN PARSING
                 layers_num++;
                 break;
             case LayerType::FLATTEN:
-                // should be automatic in the reorder operations from conv outputs to dense inputs
+                flatten();
                 layers_num++;
                 break;
             case LayerType::POOL:
@@ -257,16 +257,18 @@ AbsNet::~AbsNet() {
 }
 
 AbsNet *AbsNet::addFC(int outputs) {
-    int inputs = last_output_shape[1];
-    int batch_size = last_output_shape[0];
-    memory::dims weights_shape = { inputs, outputs };
-    memory::dims biases_shape = { outputs };
-    memory::dims output_shape = { batch_size, outputs };
+    if (last_output_shape.size() == 4){
+        flatten();
+    }
 
-    std::cout << "initialized fc dimensions" << std::endl;
+    memory::dims biases_shape = { outputs };
+    memory::dims output_shape = { last_output_shape[0], outputs };
+    memory::dims weights_shape = {outputs, last_output_shape[1]};
+    memory::dims source_shape = last_output_shape;
+
 
     try {
-        createFC(output_shape, weights_shape, biases_shape);
+        createFC(output_shape, weights_shape, biases_shape, source_shape);
     } catch (error &e) {
         std::cerr << "status: " << e.status << std::endl;
         std::cerr << "message: " << e.message << std::endl;
@@ -277,16 +279,17 @@ AbsNet *AbsNet::addFC(int outputs) {
 }
 
 AbsNet *AbsNet::addFC(int outputs, membase * weights, membase * bias) {
-    int inputs = last_output_shape[1];
-    int batch_size = last_output_shape[0];
-    memory::dims weights_shape = { inputs, outputs };
-    memory::dims biases_shape = { outputs };
-    memory::dims output_shape = { batch_size, outputs };
+    if (last_output_shape.size() == 4){
+        flatten();
+    }
 
-    std::cout << "initialized fc dimensions" << std::endl;
+    memory::dims biases_shape = { outputs };
+    memory::dims output_shape = { last_output_shape[0], outputs };
+    memory::dims weights_shape = {outputs, last_output_shape[1]};
+    memory::dims source_shape = last_output_shape;
 
     try {
-        createFC(output_shape, weights_shape, biases_shape, weights, bias);
+        createFC(output_shape, weights_shape, biases_shape, source_shape, weights, bias);
     } catch (error &e) {
         std::cerr << "status: " << e.status << std::endl;
         std::cerr << "message: " << e.message << std::endl;
@@ -315,9 +318,27 @@ void AbsNet::createConv2D(const memory::dims& conv_src_tz,
                  conv_bias_memory);
 }
 
-void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz) {
+void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
+                      const memory::dims& fc_src_tz) {
 
-    auto weights_memory = new membase(fc_weights_tz, memory::format::nc, memory::data_type::f32, nullptr, 1.f);
+    membase * weights_memory;
+    if (fc_weights_tz.size() == 4)
+        weights_memory = new membase(fc_weights_tz, memory::format::oihw, memory::data_type::f32, nullptr, 1.f);
+    else
+        weights_memory = new membase(fc_weights_tz, memory::format::oi, memory::data_type::f32, nullptr, 1.f);
     auto bias_memory = new membase(fc_bias_tz, memory::format::x, memory::data_type::f32, nullptr, 1.f);
-    createFC(fc_dst_tz, fc_weights_tz, fc_bias_tz, weights_memory, bias_memory);
+    createFC(fc_dst_tz, fc_weights_tz, fc_bias_tz, fc_src_tz, weights_memory, bias_memory);
+}
+
+void AbsNet::flatten(){
+    int channels = 1;
+    for (int i = 1; i<last_output_shape.size(); i++)
+        channels *= last_output_shape[i];
+    int batch_size = last_output_shape[0];
+
+    last_output = new membase({batch_size, channels}, memory::format::oi,
+                              last_output->dtype(), last_output->memref->get_data_handle(), last_output->scale);
+    last_output_shape = {batch_size, channels};
+    // need just a little hack now...
+    dataPipelineManager->last_output = last_output;
 }

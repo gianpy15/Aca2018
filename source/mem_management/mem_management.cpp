@@ -131,8 +131,7 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
             return last_output;
         }
         // otherwhise just rescale and reformat on itself
-        auto pd = last_output->memref->get_primitive_desc();
-        src_mem = new membase(pd, last_output->memref->get_data_handle(), scale);
+        src_mem = new membase(src_desc, last_output->memref->get_data_handle(), scale);
     }
     else {
         // if the last output is not okay, look for others

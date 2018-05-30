@@ -26,7 +26,7 @@ private:
                       const memory::dims& pool_padding, algorithm pool_algorithm) override;
 
     void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                  membase* user_weights, membase* user_bias) override;
+                  const memory::dims& fc_src_tz, membase* user_weights, membase* user_bias) override;
 
 
 };

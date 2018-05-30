@@ -88,7 +88,7 @@ void INTNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dim
 }
 
 void INTNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                          membase* user_weights, membase* user_bias) {
+                          const memory::dims& fc_src_tz, membase* user_weights, membase* user_bias) {
     std::cerr << "Function not implemented" << std::endl;
     exit(1);
 }
