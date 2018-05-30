@@ -3,6 +3,7 @@
 //
 #include <mkldnn_types.h>
 #include "AbsNet.h"
+#include "../io/h5io.h"
 
 void AbsNet::run_net(int times) {
     if (!inference_ops.empty()) {
@@ -39,6 +40,81 @@ void AbsNet::setup_net() {
 
     parametersManager->setup_done();
 
+}
+
+AbsNet::AbsNet(const std::string filename){
+    dataPipelineManager = new DataPipelineManager(inference_ops);
+    parametersManager = new ParametersManager(setup_ops);
+
+    H5io parser(filename);
+
+    memory::dims tmp_dims {0, 0, 0, 0};
+    memory::dims tmp_wdims {0, 0, 0, 0};
+    memory::dims tmp_bdims {0, 0, 0, 0};
+
+    LayerDescriptor* tmp_layer;
+    int layers_num = 0;
+    int i, j;
+    int ksize[] {0, 0};
+    int default_strides[] {1, 1};
+    memory::primitive_desc tmp_memdesc;
+    membase * tmp_weights;
+    membase * tmp_biases;
+
+    while(parser.has_next()){
+        tmp_layer = parser.get_next();
+        switch(tmp_layer->layerType){
+            case LayerType::INPUT:
+                if (layers_num){
+                    std::cerr << "PARSING ERROR: INPUT SPECIFICATION NOT FIRST" << std::endl;
+                    exit(-1);
+                }
+                for (i=0; i<4; i++)
+                    tmp_dims[i] = (int)tmp_layer->weightsDimensions[i];
+                last_output_shape = input_tz;
+                tmp_memdesc ={ { { tmp_dims }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
+                last_output = dataPipelineManager->allocate_src(tmp_memdesc);
+                layers_num++;
+                break;
+            case LayerType::CONV:
+                for (i=0; i<4; i++)
+                    tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
+                for (i=0; i<1; i++)
+                    tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
+
+                tmp_weights = new membase(tmp_wdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
+                tmp_biases = new membase(tmp_wdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
+
+                ksize[0] = tmp_wdims[0];
+                ksize[1] = tmp_wdims[1];
+
+                addConv2D(tmp_wdims[3], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
+                layers_num++;
+                break;
+            case LayerType::DENSE:
+                for (i=0; i<4; i++)
+                    tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
+                for (i=0; i<1; i++)
+                    tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
+
+                tmp_weights = new membase(tmp_wdims, memory::format::nc, memory::data_type::f32, tmp_layer->weights);
+                tmp_biases = new membase(tmp_wdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
+
+                // JUST A GUESS: NOT SURE WHETHER FORMAT IS (INPUT, OUTPUT) OR (OUTPUT, INPUT). GUESSED THE SECOND ONE.
+                addFC(tmp_wdims[0], tmp_weights, tmp_biases); // TODO: CHECK CORRECT ORDER OF DIMS IN PARSING
+                layers_num++;
+                break;
+            case LayerType::FLATTEN:
+                // should be automatic in the reorder operations from conv outputs to dense inputs
+                layers_num++;
+                break;
+            case LayerType::POOL:
+                ksize[0] = ksize[1] = 2;
+                addPool2D(ksize, Pooling::MAX, Padding::SAME);
+                layers_num++;
+                break;
+        }
+    }
 }
 
 AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {

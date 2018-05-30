@@ -30,6 +30,7 @@ enum Pooling { MAX, AVG };
 class AbsNet {
 public:
     explicit AbsNet(const memory::dims &input_size);
+    explicit AbsNet(std::string filename);
 
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding,
             membase * weights, membase*bias);
