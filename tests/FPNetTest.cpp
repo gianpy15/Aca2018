@@ -31,13 +31,6 @@ namespace FPTests{
         ASSERT_NO_THROW(net->addConv2D(16, kernel_5x5, two_stride, Padding::SAME));
         ASSERT_NO_THROW(net->addConv2D(16, kernel_5x5, four_stride, Padding::SAME));
     }
-
-    TEST(FPNetwork_conv, different_padding) {
-        AbsNet *net = new FPNetwork(net_input);
-        ASSERT_NO_THROW(net->addConv2D(16, kernel_3x3, no_stride, Padding::VALID));
-        ASSERT_NO_THROW(net->addConv2D(16, kernel_5x5, no_stride, Padding::VALID));
-        ASSERT_NO_THROW(net->addConv2D(16, kernel_5x5, no_stride, Padding::VALID));
-    }
 }
 
 int main(int argc, char* argv[])
