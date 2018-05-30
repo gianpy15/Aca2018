@@ -47,6 +47,7 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
+    /*
     size_t init_mem = getCurrentMemUsage();
     std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
     std::cout << "Testing FP network" << std::endl;
@@ -72,4 +73,9 @@ int main() {
 
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);
+     */
+
+    memory::dims input = {1, 100, 1, 1};
+    auto net = new FPNetwork(input);
+
 }
