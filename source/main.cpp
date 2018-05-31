@@ -73,7 +73,7 @@ int main() {
 
     //AbsNet *net = test_fpNet(1);
    // AbsNet *net2 = test_intNet(1);
-     */
+
 
     memory::dims input = {1, 3, 227, 227};
     auto net = new FPNetwork(input);
@@ -82,5 +82,8 @@ int main() {
     net->addFC(16);
     net->setup_net();
     net->run_net();
+     */
+
+    AbsNet *net = new FPNetwork("vgg");
 
 }

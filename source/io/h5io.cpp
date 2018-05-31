@@ -138,7 +138,6 @@ bool H5io::has_next() {
 
 H5io::~H5io() {
     delete this->net;
-    free(this);
 }
 
 LayerDescriptor::~LayerDescriptor() {

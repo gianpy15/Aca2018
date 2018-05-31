@@ -55,7 +55,7 @@ protected:
     std::vector<primitive> setup_ops;
     membase * last_output;
     /// Format: { batch, channels, width, height }
-    memory::dims last_output_shape;
+    memory::dims *last_output_shape;
     engine cpu_engine = get_glob_engine();
 
     /**

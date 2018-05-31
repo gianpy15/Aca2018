@@ -50,7 +50,7 @@ AbsNet::AbsNet(const std::string filename){
 
     memory::dims tmp_dims {0, 0, 0, 0};
     memory::dims tmp_wdims {0, 0, 0, 0};
-    memory::dims tmp_bdims {0, 0, 0, 0};
+    memory::dims tmp_bdims {0};
 
     LayerDescriptor* tmp_layer;
     int layers_num = 0;
@@ -69,24 +69,32 @@ AbsNet::AbsNet(const std::string filename){
                     std::cerr << "PARSING ERROR: INPUT SPECIFICATION NOT FIRST" << std::endl;
                     exit(-1);
                 }
+                /*
                 for (i=0; i<4; i++)
                     tmp_dims[i] = (int)tmp_layer->weightsDimensions[i];
-                last_output_shape = input_tz;
-                tmp_memdesc ={ { { tmp_dims }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
+                    */
+                tmp_dims = {100, 224, 224, 3};
+                input_tz = {100, 224, 224, 3};
+                delete last_output_shape;
+                last_output_shape = new memory::dims(input_tz);
+                tmp_memdesc ={ { { tmp_dims }, memory::data_type::f32, memory::format::nhwc }, cpu_engine};
                 last_output = dataPipelineManager->allocate_src(tmp_memdesc);
                 layers_num++;
                 break;
             case LayerType::CONV:
                 for (i=0; i<4; i++)
-                    tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
-                for (i=0; i<1; i++)
+                    tmp_wdims[i] = (int) tmp_layer->weightsDimensions[i];
+                for (i=0; i<1; i++) {
                     tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
+                    cout << tmp_layer->biasesDimensions[0] << " " << tmp_layer->biasesDimensions[1] << endl;
+                }
 
                 tmp_weights = new membase(tmp_wdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
-                tmp_biases = new membase(tmp_wdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
+                tmp_biases = new membase(tmp_bdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
 
                 ksize[0] = tmp_wdims[0];
                 ksize[1] = tmp_wdims[1];
+                cout << "Layers count: " << layers_num << endl;
 
                 addConv2D(tmp_wdims[3], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
                 layers_num++;
@@ -118,7 +126,8 @@ AbsNet::AbsNet(const std::string filename){
 }
 
 AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
-    last_output_shape = input_tz;
+    delete last_output_shape;
+    last_output_shape = new memory::dims(input_tz);
     dataPipelineManager = new DataPipelineManager(inference_ops);
     parametersManager = new ParametersManager(setup_ops);
     memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
@@ -126,15 +135,17 @@ AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
 }
 
 AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding) {
-    memory::dims in_shape = last_output_shape;
+    memory::dims in_shape = *last_output_shape;
 
     /**
      * Channels_out: the number of channels outputs by the convolution
-     * in_shape[1]: should be the number of channels of the input tensor
+     * in_shape[3]: should be the number of channels of the input tensor for channel last configuration
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
 
-    memory::dims conv_weights_tz = {channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
+    cout << in_shape[3];
+
+    memory::dims conv_weights_tz = {channels_out, in_shape[3], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
     memory::dims conv_strides = { strides[0], strides[1] };
     memory::dims out_shape;
@@ -165,15 +176,17 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
 }
 
 AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding, membase * weights, membase * bias) {
-    memory::dims in_shape = last_output_shape;
+    memory::dims in_shape = *last_output_shape;
 
     /**
      * Channels_out: the number of channels outputs by the convolution
-     * in_shape[1]: should be the number of channels of the input tensor
+     * in_shape[3]: should be the number of channels of the input tensor for channel last configuration
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
 
-    memory::dims conv_weights_tz = {channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
+    cout << in_shape[3] << endl;
+
+    memory::dims conv_weights_tz = {channels_out, in_shape[3], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
     memory::dims conv_strides = { strides[0], strides[1] };
     memory::dims out_shape;
@@ -204,7 +217,7 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
 }
 
 AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding) {
-    memory::dims in_shape = last_output_shape;
+    memory::dims in_shape = *last_output_shape;
     memory::dims pool_out_shape;
     memory::dims pool_kernel = { kernel_size[0], kernel_size[1] };
     memory::dims pool_strides = { kernel_size[0], kernel_size[1] };
@@ -227,7 +240,7 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
     }
 
     try {
-        createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
+        this->createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
     } catch (error &e) {
         std::cerr << "status: " << e.status << std::endl;
         std::cerr << "message: " << e.message << std::endl;
@@ -257,14 +270,14 @@ AbsNet::~AbsNet() {
 }
 
 AbsNet *AbsNet::addFC(int outputs) {
-    if (last_output_shape.size() == 4){
+    if (last_output_shape->size() == 4){
         flatten();
     }
 
     memory::dims biases_shape = { outputs };
-    memory::dims output_shape = { last_output_shape[0], outputs };
-    memory::dims weights_shape = {outputs, last_output_shape[1]};
-    memory::dims source_shape = last_output_shape;
+    memory::dims output_shape = { (*last_output_shape)[0], outputs };
+    memory::dims weights_shape = {outputs, (*last_output_shape)[1]};
+    memory::dims source_shape = *last_output_shape;
 
 
     try {
@@ -279,14 +292,14 @@ AbsNet *AbsNet::addFC(int outputs) {
 }
 
 AbsNet *AbsNet::addFC(int outputs, membase * weights, membase * bias) {
-    if (last_output_shape.size() == 4){
+    if (last_output_shape->size() == 4){
         flatten();
     }
 
     memory::dims biases_shape = { outputs };
-    memory::dims output_shape = { last_output_shape[0], outputs };
-    memory::dims weights_shape = {outputs, last_output_shape[1]};
-    memory::dims source_shape = last_output_shape;
+    memory::dims output_shape = { (*last_output_shape)[0], outputs };
+    memory::dims weights_shape = {outputs, (*last_output_shape)[1]};
+    memory::dims source_shape = *last_output_shape;
 
     try {
         createFC(output_shape, weights_shape, biases_shape, source_shape, weights, bias);
@@ -332,13 +345,13 @@ void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weig
 
 void AbsNet::flatten(){
     int channels = 1;
-    for (int i = 1; i<last_output_shape.size(); i++)
-        channels *= last_output_shape[i];
-    int batch_size = last_output_shape[0];
+    for (int i = 1; i<last_output_shape->size(); i++)
+        channels *= (*last_output_shape)[i];
+    int batch_size = (*last_output_shape)[0];
 
     last_output = new membase({batch_size, channels}, memory::format::oi,
                               last_output->dtype(), last_output->memref->get_data_handle(), last_output->scale);
-    last_output_shape = {batch_size, channels};
+    last_output_shape = new memory::dims{batch_size, channels};
     // need just a little hack now...
     dataPipelineManager->last_output = last_output;
 }

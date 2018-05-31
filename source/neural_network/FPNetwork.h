@@ -11,6 +11,9 @@
 class FPNetwork: public AbsNet {
 public:
     explicit FPNetwork(const memory::dims &input_size);
+
+    explicit FPNetwork(const std::string &filename);
+
     static AbsNet *createNet(const memory::dims &input_size);
 private:
     void createConv2D(const memory::dims& conv_src_tz,

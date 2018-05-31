@@ -61,7 +61,8 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     inference_ops.push_back(eltwise_forward(relu2_prim_desc, *conv_dst_memory->memref, *conv_dst_memory->memref));
 
     last_output = conv_dst_memory;
-    last_output_shape = conv_dst_tz;
+    delete last_output_shape;
+    last_output_shape = new memory::dims(conv_dst_tz);
 }
 
 void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims& pool_kernel, const memory::dims& pool_strides,
@@ -82,7 +83,8 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
             pooling_forward(pool1_pd, *last_output->memref, *pool_dst_memory->memref));
 
     last_output = pool_dst_memory;
-    last_output_shape = pool_dst_tz;
+    delete last_output_shape;
+    last_output_shape = new memory::dims(pool_dst_tz);
 }
 
 void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
@@ -107,5 +109,8 @@ void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_w
     inference_ops.push_back(inner_product_forward(fc_prim_desc, *fc_src_memory->memref,
                                         *fc_weights_memory->memref, *fc_bias_memory->memref, *fc_dst_memory->memref));
     last_output = fc_dst_memory;
-    last_output_shape = fc_dst_tz;
+    delete last_output_shape;
+    last_output_shape = new memory::dims(fc_dst_tz);
 }
+
+FPNetwork::FPNetwork(const std::string &filename) : AbsNet(filename) {}
