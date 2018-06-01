@@ -62,9 +62,16 @@ AbsNet::AbsNet(const std::string filename){
     membase * tmp_biases;
 
     while(parser.has_next()){
+        cout << "Layer count pre: " << layers_num << endl;
         tmp_layer = parser.get_next();
+        cout << "Layer count post: " << layers_num << endl;
+        cout << "Layer type: " << tmp_layer->layerType << endl;
+        cout << "Input layer type: " << LayerType::INPUT << endl;
+
         switch(tmp_layer->layerType){
             case LayerType::INPUT:
+                cout << "Input" << endl;
+                cout << "Layer count in: " << layers_num << endl;
                 if (layers_num){
                     std::cerr << "PARSING ERROR: INPUT SPECIFICATION NOT FIRST" << std::endl;
                     exit(-1);
@@ -82,11 +89,12 @@ AbsNet::AbsNet(const std::string filename){
                 layers_num++;
                 break;
             case LayerType::CONV:
+                cout << "conv" << endl;
+                /*
                 for (i=0; i<4; i++)
                     tmp_wdims[i] = (int) tmp_layer->weightsDimensions[i];
                 for (i=0; i<1; i++) {
                     tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
-                    cout << tmp_layer->biasesDimensions[0] << " " << tmp_layer->biasesDimensions[1] << endl;
                 }
 
                 tmp_weights = new membase(tmp_wdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
@@ -97,9 +105,11 @@ AbsNet::AbsNet(const std::string filename){
                 cout << "Layers count: " << layers_num << endl;
 
                 addConv2D(tmp_wdims[3], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
+                 */
                 layers_num++;
                 break;
             case LayerType::DENSE:
+                cout << "Dense" << endl;
                 for (i=0; i<4; i++)
                     tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
                 for (i=0; i<1; i++)
@@ -113,11 +123,14 @@ AbsNet::AbsNet(const std::string filename){
                 layers_num++;
                 break;
             case LayerType::FLATTEN:
+                cout << "Flatten" << endl;
                 flatten();
                 layers_num++;
                 break;
             case LayerType::POOL:
-                ksize[0] = ksize[1] = 2;
+                cout << "Pool" << endl;
+                ksize[0] = 2;
+                ksize[1] = 2;
                 addPool2D(ksize, Pooling::MAX, Padding::SAME);
                 layers_num++;
                 break;
@@ -183,8 +196,6 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
      * in_shape[3]: should be the number of channels of the input tensor for channel last configuration
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
-
-    cout << in_shape[3] << endl;
 
     memory::dims conv_weights_tz = {channels_out, in_shape[3], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
