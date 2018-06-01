@@ -4,6 +4,7 @@
 #include <mkldnn_types.h>
 #include "AbsNet.h"
 #include "../io/h5io.h"
+#include "../logging/logging.h"
 
 
 
@@ -84,7 +85,7 @@ void AbsNet::fromFile(const std::string filename){
 
     while(parser.has_next()){
         tmp_layer = parser.get_next();
-
+        log("#######################################", layers_num);
         switch(tmp_layer->layerType){
             case LayerType::INPUT:
                 cout << "Input" << endl;
@@ -105,26 +106,29 @@ void AbsNet::fromFile(const std::string filename){
                 layers_num++;
                 break;
             case LayerType::CONV:
-                cout << "conv" << endl;
+                log("Conv");
 
-                for (i=0; i<4; i++)
-                    tmp_wdims[i] = (int) tmp_layer->weightsDimensions[i];
-                for (i=0; i<1; i++) {
-                    tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
-                }
+                tmp_wdims[0] = (int) tmp_layer->weightsDimensions[3];
+                tmp_wdims[1] = (int) tmp_layer->weightsDimensions[2];
+                tmp_wdims[2] = (int) tmp_layer->weightsDimensions[0];
+                tmp_wdims[3] = (int) tmp_layer->weightsDimensions[1];
 
-                tmp_weights = new membase(tmp_wdims, memory::format::oihw, memory::data_type::f32, tmp_layer->weights);
+                tmp_bdims[0] = (int)tmp_layer->biasesDimensions[0];
+
+                tmp_weights = new membase(tmp_wdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
                 tmp_biases = new membase(tmp_bdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
 
-                ksize[0] = tmp_wdims[0];
-                ksize[1] = tmp_wdims[1];
-
-                addConv2D(tmp_wdims[3], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
+                ksize[0] = tmp_wdims[2];
+                ksize[1] = tmp_wdims[3];
+                log("Ksize[0]", ksize[0]);
+                log("Ksize[1]", ksize[1]);
+                addConv2D(tmp_wdims[0], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
 
                 layers_num++;
                 break;
             case LayerType::DENSE:
-                cout << "Dense" << endl;
+                log("Dense");
+
                 for (i=0; i<4; i++)
                     tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
                 for (i=0; i<1; i++)
@@ -138,12 +142,12 @@ void AbsNet::fromFile(const std::string filename){
                 layers_num++;
                 break;
             case LayerType::FLATTEN:
-                cout << "Flatten" << endl;
+                log("Flatten");
                 flatten();
                 layers_num++;
                 break;
             case LayerType::POOL:
-                cout << "Pool" << endl;
+                log("Pool");
                 ksize[0] = ksize[1] = 2;
                 addPool2D(ksize, Pooling::MAX, Padding::SAME);
                 layers_num++;
@@ -163,7 +167,7 @@ AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
     last_output_shape = input_tz;
     dataPipelineManager = new DataPipelineManager(inference_ops);
     parametersManager = new ParametersManager(setup_ops);
-    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nhwc }, cpu_engine};
+    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
     last_output = dataPipelineManager->allocate_src(memdesc);
 }
 
@@ -224,14 +228,13 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
 // WITH PARAMETERS
 AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding, membase * weights, membase * bias) {
     memory::dims in_shape = last_output_shape;
-
     /**
      * Channels_out: the number of channels outputs by the convolution
-     * in_shape[3]: should be the number of channels of the input tensor for channel last configuration
+     * in_shape[1]: should be the number of channels of the input tensor for channel last configuration
      * kernel_size[0:1]: is the effective dimension of the kernel function
      */
 
-    memory::dims conv_weights_tz = {channels_out, in_shape[3], kernel_size[0], kernel_size[1] };
+    memory::dims conv_weights_tz = {channels_out, in_shape[1], kernel_size[0], kernel_size[1] };
     memory::dims conv_bias_tz = { channels_out };
     memory::dims conv_strides = { strides[0], strides[1] };
     memory::dims out_shape;

@@ -13,13 +13,14 @@ using namespace mkldnn;
 struct membase{
     memory * memref;
     float scale;
+    memory::dims shape = {0};
 
     membase(memory* mem, float scales);
     membase(memory::primitive_desc &pd, void* data, float scales);
     membase(memory::primitive_desc &pd, void* data);
     membase(const memory::dims&, memory::format, memory::data_type , void*data, float scales);
     membase(const memory::dims&, memory::format, memory::data_type , void*data);
-    std::vector<int> get_shape();
+    memory::dims get_shape();
     memory::data_type dtype();
     ~membase();
 };

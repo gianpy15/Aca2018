@@ -34,6 +34,7 @@ membase::membase(const memory::dims &dims, memory::format fmt, memory::data_type
     auto pd = memory::primitive_desc(d, get_glob_engine());
     memref = data==nullptr? new memory(pd) : new memory(pd, data);
     scale = scales;
+    shape = dims;
 }
 
 membase::membase(const memory::dims &dims, memory::format fmt, memory::data_type dtype, void *data):
@@ -43,15 +44,17 @@ membase::~membase() {
     delete memref;
 }
 
-std::vector<int> membase::get_shape() {
+memory::dims membase::get_shape() {
+    return shape;
+        /*
     int ndims = memref->get_primitive_desc().desc().data.ndims;
     int* elems = memref->get_primitive_desc().desc().data.dims;
     std::vector<int> dims(ndims);
     for (int i=0; i<ndims; i++) {
-        dims[i] = elems[i]; // NO IDEA WHY THE DIMS ARRAY DESCRIPTOR IS FULL OF ZEROES!
+        dims[i] = elems[i]; // NO IDEA WHY THE DIMS ARRAY DESCRIPTOR IS FULL OF GARBAGE!
     }
     std::cerr << "Called membase::get_shape. This function is not working, don't call it!" << std::endl;
-    return dims;
+    return memory::dims(dims); */
 }
 
 memory::data_type membase::dtype(){

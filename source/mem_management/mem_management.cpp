@@ -6,6 +6,7 @@
 #include "mkldnn.hpp"
 #include "mem_management.h"
 #include <iostream>
+#include "../logging/logging.h"
 
 
 /*
@@ -152,6 +153,10 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
     primitive_attr attr;
     attr.set_int_output_round_mode(round_mode::round_nearest);
     attr.set_output_scales(0, {scale / last_output->scale});
+    log("Dst");
+    log(src_mem);
+    log("Src");
+    log(last_output);
     auto reorder_pd = reorder::primitive_desc(last_output->memref->get_primitive_desc(),
                                               src_desc, attr);
     primitive * re = new reorder(reorder_pd, *last_output->memref, *src_mem->memref);

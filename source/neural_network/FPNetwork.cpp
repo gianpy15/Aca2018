@@ -43,18 +43,22 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     auto conv_prim_desc
             = convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
-    std::cout << "CONV: conv prim_descriptor OK" << std::endl;
+    log("CONV: conv prim_descriptor OK");
     /* allocate the necessary memory and issue reorders */
     auto tmp = conv_prim_desc.src_primitive_desc();
     auto conv_src_memory = dataPipelineManager->allocate_src(tmp);
+    log("CONV: src allocation OK");
     tmp = conv_prim_desc.weights_primitive_desc();
     auto conv_weights_memory = parametersManager->allocate_parameters(tmp, conv_user_weights_memory);
+    log("CONV: weight allocation OK");
     tmp = conv_prim_desc.bias_primitive_desc();
     auto conv_bias_memory = parametersManager->allocate_parameters(tmp, conv_user_bias_memory);
+    log("CONV: bias allocation OK");
     tmp = conv_prim_desc.dst_primitive_desc();
     auto conv_dst_memory = dataPipelineManager->allocate_dst(tmp);
+    log("CONV: dst allocation OK");
 
-    std::cout << "CONV: memory allocation OK" << std::endl;
+    log("CONV: memory allocation OK");
     /* create convolution primitive and add it to inference_ops */
     inference_ops.push_back(convolution_forward(conv_prim_desc, *conv_src_memory->memref,
                                       *conv_weights_memory->memref, *conv_bias_memory->memref,
@@ -86,11 +90,14 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
                                             pool1_dst_md, pool_strides, pool_kernel, pool_padding,
                                             pool_padding, padding_kind::zero);
     auto pool1_pd = pooling_forward::primitive_desc(pool1_desc, cpu_engine);
-    auto tmp = pool1_pd.dst_primitive_desc();
+    auto tmp = pool1_pd.src_primitive_desc();
+    auto pool_src_memory = dataPipelineManager->allocate_src(tmp, last_output->scale);
+    tmp = pool1_pd.dst_primitive_desc();
     auto pool_dst_memory = dataPipelineManager->allocate_dst(tmp, last_output->scale);
 
+
     inference_ops.push_back(
-            pooling_forward(pool1_pd, *last_output->memref, *pool_dst_memory->memref));
+            pooling_forward(pool1_pd, *pool_src_memory->memref, *pool_dst_memory->memref));
 
     last_output = pool_dst_memory;
     last_output_shape = pool_dst_tz;
