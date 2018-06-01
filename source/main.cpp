@@ -82,8 +82,14 @@ int main() {
     net->addFC(16);
     net->setup_net();
     net->run_net();
-     */
+    */
 
-    AbsNet *net = new FPNetwork("vgg");
-
+    AbsNet *n = new FPNetwork({1, 3, 227, 227});
+    std::cout << "Net created..." << std::endl;
+    n->fromFile("vgg");
+    std::cout << "Net loaded..." << std::endl;
+    n->setup_net();
+    std::cout << "Net ready..." << std::endl;
+    n->run_net();
+    std::cout << "Net run successfully!" << std::endl;
 }

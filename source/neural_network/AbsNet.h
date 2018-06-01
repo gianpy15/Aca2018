@@ -30,7 +30,6 @@ enum Pooling { MAX, AVG };
 class AbsNet {
 public:
     explicit AbsNet(const memory::dims &input_size);
-    explicit AbsNet(std::string filename);
 
     AbsNet * addConv2D(int channels_out, const int *kernel_size, const int *strides, Padding padding,
             membase * weights, membase*bias);
@@ -43,6 +42,7 @@ public:
     void run_net();
     void run_net(int times);
     void setup_net();
+    void fromFile(const std::string filename);
     size_t total_memory_usage();
     size_t parameters_memory_usage();
     bool fold_memory = true;
@@ -55,7 +55,7 @@ protected:
     std::vector<primitive> setup_ops;
     membase * last_output;
     /// Format: { batch, channels, width, height }
-    memory::dims *last_output_shape;
+    memory::dims last_output_shape;
     engine cpu_engine = get_glob_engine();
 
     /**

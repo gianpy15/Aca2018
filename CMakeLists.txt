@@ -32,7 +32,7 @@ endif()
 
 link_directories(resources/hdf5/HDF_Group/HDF5/1.10.1/lib)
 
-add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp source/io/h5io.h source/io/h5io.cpp)
+add_executable(Aca2018 source/main.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp source/io/h5io.h source/io/h5io.cpp source/logging/logging.cpp source/logging/logging.h)
 add_executable(Intel source/from_intel_example.cpp)
 add_executable(IntelQuant source/intel_int8_example.cpp)
 add_executable(Tests tests/FPNetTest.cpp source/neural_network/AbsNet.cpp source/neural_network/FPNetwork.cpp source/neural_network/INTNetwork.cpp source/neural_network/INTNetwork.h source/monitoring/mem_monitoring.cpp source/monitoring/mem_monitoring.h source/mem_management/mem_base.h source/mem_management/mem_base.cpp source/mem_management/mem_management.h source/mem_management/mem_management.cpp source/io/h5io.h source/io/h5io.cpp)

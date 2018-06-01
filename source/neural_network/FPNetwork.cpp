@@ -6,6 +6,7 @@
 #include <cmath>
 #include <iostream>
 #include "FPNetwork.h"
+#include "../logging/logging.h"
 
 FPNetwork::FPNetwork(const memory::dims &input_size) : AbsNet(input_size) {}
 
@@ -17,25 +18,33 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
                              const memory::dims& conv_strides, const memory::dims& conv_dst_tz, const memory::dims& padding,
                              membase* conv_user_weights_memory, membase* conv_user_bias_memory) {
 
-    /* create memory descriptors for convolution data w/ no specified format
-     */
+    /* build up the description of the memory layout for the convolution */
     auto conv_src_md = memory::desc(
             { conv_src_tz }, memory::data_type::f32, memory::format::any);
     auto conv_bias_md = memory::desc(
             { conv_bias_tz }, memory::data_type::f32, memory::format::any);
-    auto conv_weights_md = memory::desc({ conv_weights_tz },
-                                         memory::data_type::f32, memory::format::any);
+    auto conv_weights_md = memory::desc(
+            { conv_weights_tz }, memory::data_type::f32, memory::format::any);
     auto conv_dst_md = memory::desc(
             { conv_dst_tz }, memory::data_type::f32, memory::format::any);
 
-    /* create a convolution */
+    log("CONV: mem descriptors OK");
+    log(conv_src_tz, 4);
+    log(conv_bias_tz, 1);
+    log(conv_weights_tz, 4);
+    log(conv_dst_tz, 4);
+
+    /* build up the description of the convolution */
     auto conv_desc = convolution_forward::desc(
             prop_kind::forward_inference, convolution_direct, conv_src_md,
             conv_weights_md, conv_bias_md, conv_dst_md, conv_strides,
             padding, padding, padding_kind::zero);
+    std::cout << "CONV: conv descriptor OK" << std::endl;
     auto conv_prim_desc
             = convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
+    std::cout << "CONV: conv prim_descriptor OK" << std::endl;
+    /* allocate the necessary memory and issue reorders */
     auto tmp = conv_prim_desc.src_primitive_desc();
     auto conv_src_memory = dataPipelineManager->allocate_src(tmp);
     tmp = conv_prim_desc.weights_primitive_desc();
@@ -44,6 +53,8 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     auto conv_bias_memory = parametersManager->allocate_parameters(tmp, conv_user_bias_memory);
     tmp = conv_prim_desc.dst_primitive_desc();
     auto conv_dst_memory = dataPipelineManager->allocate_dst(tmp);
+
+    std::cout << "CONV: memory allocation OK" << std::endl;
     /* create convolution primitive and add it to inference_ops */
     inference_ops.push_back(convolution_forward(conv_prim_desc, *conv_src_memory->memref,
                                       *conv_weights_memory->memref, *conv_bias_memory->memref,
@@ -57,12 +68,11 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
                                             conv_dst_memory->memref->get_primitive_desc().desc(), negative2_slope);
     auto relu2_prim_desc
             = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
-
     inference_ops.push_back(eltwise_forward(relu2_prim_desc, *conv_dst_memory->memref, *conv_dst_memory->memref));
 
+    std::cout << "CONV: relu op OK" << std::endl;
     last_output = conv_dst_memory;
-    delete last_output_shape;
-    last_output_shape = new memory::dims(conv_dst_tz);
+    last_output_shape = conv_dst_tz;
 }
 
 void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims& pool_kernel, const memory::dims& pool_strides,
@@ -83,8 +93,7 @@ void FPNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dims
             pooling_forward(pool1_pd, *last_output->memref, *pool_dst_memory->memref));
 
     last_output = pool_dst_memory;
-    delete last_output_shape;
-    last_output_shape = new memory::dims(pool_dst_tz);
+    last_output_shape = pool_dst_tz;
 }
 
 void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
@@ -109,8 +118,5 @@ void FPNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_w
     inference_ops.push_back(inner_product_forward(fc_prim_desc, *fc_src_memory->memref,
                                         *fc_weights_memory->memref, *fc_bias_memory->memref, *fc_dst_memory->memref));
     last_output = fc_dst_memory;
-    delete last_output_shape;
-    last_output_shape = new memory::dims(fc_dst_tz);
+    last_output_shape = fc_dst_tz;
 }
-
-FPNetwork::FPNetwork(const std::string &filename) : AbsNet(filename) {}

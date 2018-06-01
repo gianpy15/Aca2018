@@ -62,8 +62,7 @@ void INTNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dim
     inference_ops.push_back( convolution_forward(conv_prim_desc, *conv_src_memory->memref,
                                       *conv_weights_memory->memref, *conv_bias_memory->memref, *conv_dst_memory->memref));
 
-    delete last_output_shape;
-    last_output_shape = new memory::dims(conv_dst_tz);
+    last_output_shape = conv_dst_tz;
     last_output = conv_dst_memory;
 }
 
@@ -85,8 +84,7 @@ void INTNetwork::createPool2D(const memory::dims& pool_dst_tz, const memory::dim
             pooling_forward(pool1_pd, *last_output->memref, *pool_dst_memory->memref));
 
     last_output = pool_dst_memory;
-    delete last_output_shape;
-    last_output_shape = new memory::dims(pool_dst_tz);
+    last_output_shape = pool_dst_tz;
 }
 
 void INTNetwork::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
