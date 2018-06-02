@@ -56,6 +56,39 @@ void log(membase* mb){
     std::cout << "\tprim_kind: " << mb->memref->get_primitive_desc().desc().data.primitive_kind << std::endl;
     std::cout << "\tndims: " << mb->memref->get_primitive_desc().desc().data.ndims << std::endl;
     std::cout << "\tdtype: " << mb->dtype() << std::endl;
-    std::cout << "\tengine: " << mb->memref->get_primitive_desc().get_engine().get() << std::endl;
+    std::cout << "\tengine ptr: " << mb->memref->get_primitive_desc().get_engine().get() << std::endl;
+    std::cout << "\tdata ptrr: " << mb->memref->get_data_handle() << std::endl;
+    std::cout << "\tlayout_bdims ptr: " << mb->memref->get_primitive_desc().desc().data.layout_desc.blocking.block_dims << std::endl;
+    std::cout << "\toffset padding (data) ptr: " << mb->memref->get_primitive_desc().desc().data.layout_desc.blocking.offset_padding_to_data << std::endl;
+    std::cout << "\tlayout_pdims ptr: " << mb->memref->get_primitive_desc().desc().data.layout_desc.blocking.padding_dims << std::endl;
+    std::cout << "\toffset padding ptr: " << mb->memref->get_primitive_desc().desc().data.layout_desc.blocking.offset_padding << std::endl;
+    std::cout << "\tstrides ptr: " << mb->memref->get_primitive_desc().desc().data.layout_desc.blocking.strides << std::endl;
+
+
     std::cout << "}" << std::endl;
+}
+
+std::string error_message(int status){
+    switch (status){
+        case 0:
+            return "The operation was successful.";
+        case 1:
+            return "The operation failed due to an out-of-memory condition.";
+        case 2:
+            return "The operation failed and should be retried.";
+        case 3:
+            return "The operation failed because of incorrect function arguments.";
+        case 4:
+            return "The operation failed because a primitive was not ready for execution.";
+        case 5:
+            return "The operation failed because requested functionality is not implemented.";
+        case 6:
+            return "Primitive iterator passed over last primitive descriptor.";
+        case 7:
+            return "Primitive or engine failed on execution.";
+        case 8:
+            return "Queried element is not required for given primitive.";
+        default:
+            return "Unknown status code " + status;
+    }
 }

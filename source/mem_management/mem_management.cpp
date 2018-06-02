@@ -115,7 +115,7 @@ membase * DataPipelineManager::allocate_dst(memory::primitive_desc &dst_desc, fl
 }
 
 membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, float scale) {
-
+    log("DATA_PIPELINE_MANAGER: Allocating source data...");
     membase * src_mem = nullptr;
 
     if (last_output == nullptr){
@@ -125,10 +125,13 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
         return src_mem;
     }
     // if there are previously allocated objects...
-    // first check the last output: if it is perfect, no data movement is needed
+    // first check the last output: if it has the right size, no new allocation is needed
     if (last_output->memref->get_primitive_desc().get_size() == src_desc.get_size()){
-        // if it is perfect, then it will be the source!
+        // if it is perfect, we won't even move data: it will be the source!
+        auto lpd = last_output->memref->get_primitive_desc();
+        auto spd = src_desc;
         if (last_output->memref->get_primitive_desc() == src_desc && last_output->scale == scale){
+            log("DATA_PIPELINE_MANAGER: Source data compatible with last output, returning");
             return last_output;
         }
         // otherwhise just rescale and reformat on itself

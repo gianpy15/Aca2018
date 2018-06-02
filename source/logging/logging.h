@@ -15,4 +15,6 @@ void log(std::string label, int n);
 void log(membase* mb);
 void log(std::vector<int> v);
 
+std::string error_message(int status);
+
 #endif //ACA2018_LOGGING_H

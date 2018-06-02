@@ -24,7 +24,7 @@ void AbsNet::run_net(int times) {
             std::cout << "Runs: " << times << std::endl
                       << "Time elapsed(ms): " << (double)(end_time-start_time).count()/1e+6 << std::endl;
         } catch (error &e) {
-            std::cerr << "status: " << e.status << std::endl;
+            std::cerr << "status: " << error_message(e.status) << std::endl;
             std::cerr << "message: " << e.message << std::endl;
             throw;
         }
@@ -47,7 +47,7 @@ void AbsNet::setup_net() {
         try {
             stream(stream::kind::eager).submit(setup_ops).wait();
         } catch (error &e) {
-            std::cerr << "status: " << e.status << std::endl;
+            std::cerr << "status: " << error_message(e.status) << std::endl;
             std::cerr << "message: " << e.message << std::endl;
             throw;
         }
@@ -218,7 +218,7 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
     try {
         createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz);
     } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "status: " << error_message(e.status) << std::endl;
         std::cerr << "message: " << e.message << std::endl;
         throw;
     }
@@ -256,7 +256,7 @@ AbsNet *AbsNet::addConv2D(int channels_out, const int *kernel_size, const int *s
     try {
         createConv2D(in_shape, conv_weights_tz, conv_bias_tz, conv_strides, out_shape, padding_tz, weights, bias);
     } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "status: " << error_message(e.status) << std::endl;
         std::cerr << "message: " << e.message << std::endl;
         throw;
     }
@@ -291,7 +291,7 @@ AbsNet *AbsNet::addPool2D(const int *kernel_size, Pooling pooling_algorithm, Pad
     try {
         this->createPool2D(pool_out_shape, pool_kernel, pool_strides, pool_padding, pool_alg);
     } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "status: " << error_message(e.status) << std::endl;
         std::cerr << "message: " << e.message << std::endl;
         throw;
     }
@@ -314,7 +314,7 @@ AbsNet *AbsNet::addFC(int outputs) {
     try {
         createFC(output_shape, weights_shape, biases_shape, source_shape);
     } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "status: " << error_message(e.status) << std::endl;
         std::cerr << "message: " << e.message << std::endl;
         throw;
     }
