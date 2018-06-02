@@ -9,3 +9,5 @@ gen
 cmake-build-debug
 resources/*
 !resources/*.sh
+!resources/*.txt
+resources/vgg.txt
