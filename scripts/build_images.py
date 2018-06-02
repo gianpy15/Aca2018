@@ -169,5 +169,5 @@ if __name__ == '__main__':
     labels = np.array(labels)
     print('Writing images with shape {}...'.format(np.shape(images)))
 
-    write_h5('images', images, labels)
+    write_h5('images', images, labels, compression_level=9)
     read_h5('images')
