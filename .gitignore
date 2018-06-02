@@ -10,4 +10,5 @@ cmake-build-debug
 resources/*
 !resources/*.sh
 !resources/*.txt
+!resources/test_imgs/*
 resources/vgg.txt

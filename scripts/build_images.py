@@ -5,6 +5,7 @@ from matplotlib import image
 import scipy.io as scio
 import re
 import h5py
+from keras.applications.vgg16 import preprocess_input
 
 
 def matrix_loader(filename, field_name='X_red'):
@@ -78,10 +79,10 @@ def load(path, field_name=None, force_format=None, affine_transform=None, alpha=
             data = data[:, :, 0:3]
     # if we have a single image in grayscale or a batch of grayscale without channel, make them well formatted
     if len(data.shape) == 2 or (len(data.shape) == 3 and data.shape[-1] > 4):
-        data = np.reshape(data, data.shape+(1,))
+        data = np.reshape(data, data.shape + (1,))
     # we process data in batches, so format data like that
     if len(data.shape) == 3:
-        data = np.reshape(data, (-1,)+data.shape)
+        data = np.reshape(data, (-1,) + data.shape)
 
     for img in data:
         # accept images of different sizes, standardize them
@@ -109,7 +110,8 @@ def write_h5(name: str, images, labels, overwrite=True, compression_level=0):
     given a keras model with parameters, this method will create an h5 file
     in the resources with all the weights saved.
     :param name: is the file name, it is not necessary to specify the path or the file extension
-    :param keras_model: is the model to be saved
+    :param images: are the images to write
+    :param labels: are the labels to write, they must be mapped 1:1 with the images
     :param overwrite: is true if u want to overwrite the file in case it already exists
     :param compression_level: an int 0 <= cl <= 9 is the level of compression with the algorithm gzip.
                               it will take more time to create and read the file if the cl is higher but
@@ -121,38 +123,51 @@ def write_h5(name: str, images, labels, overwrite=True, compression_level=0):
     if os.path.isfile(path) and not overwrite:
         return
 
-    with h5py.File(name=path, mode='a') as file:
+    with h5py.File(name=path, mode='w') as file:
         main_group = file.create_group(name=name)
 
-        for layer in keras_model.layers:
-            group = main_group.create_group(name=layer.name)
-            layer_weights = layer.get_weights()
-            weights = True
-            for l in layer_weights:
-                data_set_name = 'weights' if weights else 'biases'
-                if 0 < compression_level <= 9:
-                    group.create_dataset(name=data_set_name, data=l,
-                                         compression="gzip",
-                                         compression_opts=compression_level)
-                else:
-                    group.create_dataset(name='weights' if weights else 'biases', data=l)
-                weights = False
-            print('Added layer ' + layer.name)
+        if 0 < compression_level <= 9:
+            main_group.create_dataset(name='images', data=images,
+                                      compression="gzip",
+                                      compression_opts=compression_level)
+        else:
+            main_group.create_dataset(name='images', data=images)
+
+        main_group.create_dataset(name='labels', data=labels)
+
+        print(name + '.h5 created')
 
 
-images_path = '../resources/images/'
+def read_h5(name):
+    path = '../resources/' + name + '.h5'
+    with h5py.File(name=path, mode='a') as file:
+        file.visit(lambda x: print(x))
+
+
+images_path = '../resources/ILSVRC2012/'
+images_test_path = '../resources/test_imgs/'
 number_of_images = ''
 labels_path = '../resources/ILSVRC2012_validation_ground_truth.txt'
+samples = 5
 
 if __name__ == '__main__':
     images = []
     labels = []
+    path = images_test_path
     with open(labels_path, 'r') as file:
         all_labels = [line for line in file]
-        print(np.shape(all_labels))
-    for img in os.listdir(images_path):
-        images.append(load(images_path + img))
+
+    i = 0
+    for img in os.listdir(path):
+        images.append(preprocess_input(load(path + img, force_format=[230, 230, 3])))
         labels.append(int(all_labels[int(img.split('_')[2].split('.')[0]) - 1]))
+        i = i + 1
+        if i >= samples:
+            break
 
-    print(labels)
+    images = np.rollaxis(np.reshape(np.array(images), newshape=(samples, ) + (230, 230, 3)), axis=3, start=1)
+    labels = np.array(labels)
+    print('Writing images with shape {}...'.format(np.shape(images)))
 
+    write_h5('images', images, labels)
+    read_h5('images')
