@@ -14,7 +14,7 @@ void log(std::string str){
     std::cout << str << std::endl;
 }
 
-void log(int n){
+void log(long long n){
     if (!shallLog)
         return;
     std::cout << n << std::endl;
@@ -29,7 +29,7 @@ void log(std::vector<int> v){
     std::cout << v[v.size()-1] <<"}" << std::endl;
 }
 
-void log(std::string label, int n){
+void log(std::string label, long long n){
     if (!shallLog)
         return;
     std::cout <<label << ": " << n << std::endl;

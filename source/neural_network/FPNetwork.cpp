@@ -28,7 +28,7 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     auto conv_dst_md = memory::desc(
             { conv_dst_tz }, memory::data_type::f32, memory::format::any);
 
-    log("CONV: mem descriptors OK");
+    log("CONV");
     log(conv_src_tz, 4);
     log(conv_bias_tz, 1);
     log(conv_weights_tz, 4);
@@ -39,26 +39,19 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
             prop_kind::forward_inference, convolution_direct, conv_src_md,
             conv_weights_md, conv_bias_md, conv_dst_md, conv_strides,
             padding, padding, padding_kind::zero);
-    std::cout << "CONV: conv descriptor OK" << std::endl;
     auto conv_prim_desc
             = convolution_forward::primitive_desc(conv_desc, cpu_engine);
 
-    log("CONV: conv prim_descriptor OK");
     /* allocate the necessary memory and issue reorders */
     auto tmp = conv_prim_desc.src_primitive_desc();
     auto conv_src_memory = dataPipelineManager->allocate_src(tmp);
-    log("CONV: src allocation OK");
     tmp = conv_prim_desc.weights_primitive_desc();
     auto conv_weights_memory = parametersManager->allocate_parameters(tmp, conv_user_weights_memory);
-    log("CONV: weight allocation OK");
     tmp = conv_prim_desc.bias_primitive_desc();
     auto conv_bias_memory = parametersManager->allocate_parameters(tmp, conv_user_bias_memory);
-    log("CONV: bias allocation OK");
     tmp = conv_prim_desc.dst_primitive_desc();
     auto conv_dst_memory = dataPipelineManager->allocate_dst(tmp);
-    log("CONV: dst allocation OK");
 
-    log("CONV: memory allocation OK");
     /* create convolution primitive and add it to inference_ops */
     inference_ops.push_back(convolution_forward(conv_prim_desc, *conv_src_memory->memref,
                                       *conv_weights_memory->memref, *conv_bias_memory->memref,
@@ -74,7 +67,6 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
             = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
     inference_ops.push_back(eltwise_forward(relu2_prim_desc, *conv_dst_memory->memref, *conv_dst_memory->memref));
 
-    std::cout << "CONV: relu op OK" << std::endl;
     last_output = conv_dst_memory;
     last_output_shape = conv_dst_tz;
 }

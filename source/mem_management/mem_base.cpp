@@ -41,6 +41,7 @@ membase::membase(const memory::dims &dims, memory::format fmt, memory::data_type
         membase(dims, fmt, dtype, data, 1.f) {}
 
 membase::~membase() {
+    free(memref->get_data_handle());
     delete memref;
 }
 

@@ -35,6 +35,7 @@ membase* ParametersManager::allocate_parameters(memory::primitive_desc& dst_desc
     primitive_attr dst_attr;
     dst_attr.set_int_output_round_mode(round_mode::round_nearest);
     dst_attr.set_output_scales(0, {dst_scale / src_data->scale});
+
     auto reorder_pd = reorder::primitive_desc(src_data->memref->get_primitive_desc(),
             dst_desc, dst_attr);
     primitive * ret = new reorder(reorder_pd, *src_data->memref, *dst_mem->memref);
@@ -115,7 +116,6 @@ membase * DataPipelineManager::allocate_dst(memory::primitive_desc &dst_desc, fl
 }
 
 membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, float scale) {
-    log("DATA_PIPELINE_MANAGER: Allocating source data...");
     membase * src_mem = nullptr;
 
     if (last_output == nullptr){
@@ -131,7 +131,6 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
         auto lpd = last_output->memref->get_primitive_desc();
         auto spd = src_desc;
         if (last_output->memref->get_primitive_desc() == src_desc && last_output->scale == scale){
-            log("DATA_PIPELINE_MANAGER: Source data compatible with last output, returning");
             return last_output;
         }
         // otherwhise just rescale and reformat on itself

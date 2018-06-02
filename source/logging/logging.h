@@ -10,8 +10,8 @@
 
 void log(std::string str);
 void log(mkldnn::memory::dims d, int size);
-void log(int n);
-void log(std::string label, int n);
+void log(long long n);
+void log(std::string label, long long n);
 void log(membase* mb);
 void log(std::vector<int> v);
 

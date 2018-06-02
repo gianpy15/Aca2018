@@ -71,7 +71,8 @@ void AbsNet::fromFile(const std::string filename){
     H5io parser(filename);
 
     memory::dims tmp_dims {0, 0, 0, 0};
-    memory::dims tmp_wdims {0, 0, 0, 0};
+    memory::dims tmp_cwdims {0, 0, 0, 0};
+    memory::dims tmp_dwdims {0, 0};
     memory::dims tmp_bdims {0};
 
     LayerDescriptor* tmp_layer;
@@ -108,37 +109,38 @@ void AbsNet::fromFile(const std::string filename){
             case LayerType::CONV:
                 log("Conv");
 
-                tmp_wdims[0] = (int) tmp_layer->weightsDimensions[3];
-                tmp_wdims[1] = (int) tmp_layer->weightsDimensions[2];
-                tmp_wdims[2] = (int) tmp_layer->weightsDimensions[0];
-                tmp_wdims[3] = (int) tmp_layer->weightsDimensions[1];
+                tmp_cwdims[0] = (int) tmp_layer->weightsDimensions[3];
+                tmp_cwdims[1] = (int) tmp_layer->weightsDimensions[2];
+                tmp_cwdims[2] = (int) tmp_layer->weightsDimensions[0];
+                tmp_cwdims[3] = (int) tmp_layer->weightsDimensions[1];
 
                 tmp_bdims[0] = (int)tmp_layer->biasesDimensions[0];
 
-                tmp_weights = new membase(tmp_wdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
+                tmp_weights = new membase(tmp_cwdims, memory::format::hwio, memory::data_type::f32, tmp_layer->weights);
                 tmp_biases = new membase(tmp_bdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
 
-                ksize[0] = tmp_wdims[2];
-                ksize[1] = tmp_wdims[3];
+                ksize[0] = tmp_cwdims[2];
+                ksize[1] = tmp_cwdims[3];
                 log("Ksize[0]", ksize[0]);
                 log("Ksize[1]", ksize[1]);
-                addConv2D(tmp_wdims[0], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
+                addConv2D(tmp_cwdims[0], ksize, default_strides, Padding::SAME, tmp_weights, tmp_biases);
 
                 layers_num++;
                 break;
             case LayerType::DENSE:
                 log("Dense");
 
-                for (i=0; i<4; i++)
-                    tmp_wdims[i] = (int)tmp_layer->weightsDimensions[i];
-                for (i=0; i<1; i++)
-                    tmp_bdims[i] = (int)tmp_layer->biasesDimensions[i];
+                //for (i=0; i<2; i++)
+                //    tmp_dwdims[i] = (int)tmp_layer->weightsDimensions[i];
+                tmp_dwdims[0] = (int)tmp_layer->weightsDimensions[1];
+                tmp_dwdims[1] = (int)tmp_layer->weightsDimensions[0];
 
-                tmp_weights = new membase(tmp_wdims, memory::format::nc, memory::data_type::f32, tmp_layer->weights);
-                tmp_biases = new membase(tmp_wdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
+                tmp_bdims[0] = (int)tmp_layer->biasesDimensions[0];
 
-                // JUST A GUESS: NOT SURE WHETHER FORMAT IS (INPUT, OUTPUT) OR (OUTPUT, INPUT). GUESSED THE LAST ONE.
-                addFC(tmp_wdims[0], tmp_weights, tmp_biases); // TODO: CHECK CORRECT ORDER OF DIMS IN PARSING
+                tmp_weights = new membase(tmp_dwdims, memory::format::io, memory::data_type::f32, tmp_layer->weights);
+                tmp_biases = new membase(tmp_bdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
+
+                addFC(tmp_dwdims[0], tmp_weights, tmp_biases);
                 layers_num++;
                 break;
             case LayerType::FLATTEN:
@@ -336,7 +338,7 @@ AbsNet *AbsNet::addFC(int outputs, membase * weights, membase * bias) {
     try {
         createFC(output_shape, weights_shape, biases_shape, source_shape, weights, bias);
     } catch (error &e) {
-        std::cerr << "status: " << e.status << std::endl;
+        std::cerr << "status: " << error_message(e.status) << std::endl;
         std::cerr << "message: " << e.message << std::endl;
         throw;
     }
