@@ -85,7 +85,7 @@ int main() {
     net->run_net();
     */
 
-    AbsNet *n = new FPNetwork({1, 3, 230, 230});
+    AbsNet *n = new INTNetwork({1, 3, 230, 230});
     size_t init_mem = getCurrentMemUsage();
     std::cout << "Net created..." << std::endl;
     n->fromFile("vgg");

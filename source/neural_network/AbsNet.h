@@ -42,6 +42,8 @@ public:
     void run_net();
     void run_net(int times);
     void setup_net();
+    void set_input_data(float* dataHandle);
+    float* getOutput();
     void fromFile(const std::string filename);
     size_t total_memory_usage();
     size_t parameters_memory_usage();
@@ -50,7 +52,7 @@ public:
 protected:
     ParametersManager *parametersManager;
     DataPipelineManager *dataPipelineManager;
-    memory::dims input_tz;
+    membase* input_mem;
     std::vector<primitive> inference_ops;
     std::vector<primitive> setup_ops;
     membase * last_output;

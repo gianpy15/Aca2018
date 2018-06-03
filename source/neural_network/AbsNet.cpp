@@ -165,12 +165,12 @@ void AbsNet::fromFile(const std::string filename){
  * #################################################################################
  */
 
-AbsNet::AbsNet(const memory::dims &input_size): input_tz(input_size) {
-    last_output_shape = input_tz;
+AbsNet::AbsNet(const memory::dims &input_size): last_output_shape(input_size) {
     dataPipelineManager = new DataPipelineManager(inference_ops);
     parametersManager = new ParametersManager(setup_ops);
     memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
     last_output = dataPipelineManager->allocate_src(memdesc);
+    input_mem = last_output;
 }
 
 
@@ -404,6 +404,15 @@ void AbsNet::flatten(){
     dataPipelineManager->last_output = last_output;
 }
 
+
+void AbsNet::set_input_data(float *dataHandle) {
+    input_mem->memref->set_data_handle(dataHandle);
+}
+
+float* AbsNet::getOutput() {
+    void* outRef = last_output->memref->get_data_handle();
+    return (float*) outRef;
+}
 
 
 /* #################################################################################
