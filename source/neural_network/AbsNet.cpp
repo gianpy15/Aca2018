@@ -14,7 +14,7 @@
  * #################################################################################
  */
 
-void AbsNet::run_net(int times) {
+double AbsNet::run_net(int times) {
     if (!inference_ops.empty()) {
         try {
             auto start_time = std::chrono::high_resolution_clock::now();
@@ -22,8 +22,10 @@ void AbsNet::run_net(int times) {
                 stream(stream::kind::eager).submit(inference_ops).wait();
             }
             auto end_time = std::chrono::high_resolution_clock::now();
+            double ret = (double)(end_time-start_time).count()/1e+6;
             std::cout << "Runs: " << times << std::endl
-                      << "Time elapsed(ms): " << (double)(end_time-start_time).count()/1e+6 << std::endl;
+                      << "Time elapsed(ms): " << ret << std::endl;
+            return ret;
         } catch (error &e) {
             std::cerr << "status: " << error_message(e.status) << std::endl;
             std::cerr << "message: " << e.message << std::endl;
@@ -32,8 +34,8 @@ void AbsNet::run_net(int times) {
     }
 }
 
-void AbsNet::run_net(){
-    run_net(1);
+double AbsNet::run_net(){
+    return run_net(1);
 }
 
 
@@ -43,7 +45,8 @@ void AbsNet::run_net(){
  * #################################################################################
  */
 
-void AbsNet::setup_net() {
+double AbsNet::setup_net() {
+    auto start_time = std::chrono::high_resolution_clock::now();
     if (!setup_ops.empty()) {
         try {
             stream(stream::kind::eager).submit(setup_ops).wait();
@@ -56,6 +59,8 @@ void AbsNet::setup_net() {
 
     parametersManager->setup_done();
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    return (double)(end_time-start_time).count()/1e+6;
 }
 
 

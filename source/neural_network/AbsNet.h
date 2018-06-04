@@ -41,9 +41,9 @@ public:
     std::vector< std::vector<int> > top_n_output(int n);
     void flatten();
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
-    void run_net();
-    void run_net(int times);
-    void setup_net();
+    double run_net();
+    double run_net(int times);
+    double setup_net();
     void set_input_data(float* dataHandle);
     float* getOutput();
     void fromFile(const std::string filename);
