@@ -22,8 +22,8 @@ private:
     const H5std_string ROOT = H5std_string("images");
     const H5std_string IMAGES = H5std_string("images");
     const H5std_string LABELS = H5std_string("labels");
-    int *images_shape = nullptr;
-    int *labels_shape = nullptr;
+    unsigned long long *images_shape = nullptr;
+    unsigned long long *labels_shape = nullptr;
     H5File *dataSet = nullptr;
 
 public:
@@ -39,12 +39,12 @@ public:
      * @return the images's shape with format (batch, width, height, channels)
      *         if the method get_images() has not been called yet, this will return nullptr
      */
-    int *get_images_shape();
+    unsigned long long *get_images_shape();
     /**
      * @return the labels's shape with format (batch)
      *         if the method get_labels() has not been called yet, this will return nullptr
      */
-    int *get_labels_shape();
+    unsigned long long *get_labels_shape();
     /**
      * Create a new instance for this class
      * @param file_name is the name of the file with the data set in .h5 format, is not necessary

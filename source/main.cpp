@@ -3,6 +3,7 @@
 #include "neural_network/INTNetwork.h"
 #include "monitoring/mem_monitoring.h"
 #include "logging/logging.h"
+#include "io/DataSetIO.h"
 
 const int kernel_5x5[] = {5, 5};
 const int kernel_3x3[] = {3, 3};
@@ -83,7 +84,7 @@ int main() {
     net->addFC(16);
     net->setup_net();
     net->run_net();
-    */
+
 
     AbsNet *n = new INTNetwork({1, 3, 230, 230});
     size_t init_mem = getCurrentMemUsage();
@@ -106,4 +107,39 @@ int main() {
     log("Memory consumption (KB): ", n->total_memory_usage()/1000);
     log("Param memory (KB): ", n->parameters_memory_usage()/1000);
     log("Memory allocation (KB): ", net_run_mem-init_mem);
+
+     */
+
+    DataSetIO dataset("images");
+
+    auto input_images = dataset.get_images();
+    auto output_labels = dataset.get_labels();
+    auto out_shape = dataset.get_labels_shape();
+    auto in_shape = dataset.get_images_shape();
+
+    auto net_in_shape = {(int)in_shape[0], (int)in_shape[3], (int)in_shape[1], (int)in_shape[2]};
+
+    FPNetwork vgg16(net_in_shape);
+    vgg16.fromFile("vgg");
+    vgg16.set_input_data(input_images);
+    vgg16.setup_net();
+    vgg16.run_net();
+    auto output = vgg16.top_n_output(10);
+
+    std::cout << "Results:" << std::endl;
+    int i=0;
+    for (auto im: output) {
+        std::cout << "Im " << i << ": ";
+        for (auto pred: im)
+            std::cout << pred << " ";
+        std::cout << std::endl;
+        i++;
+    }
+
+    std::cerr << "Images";
+    for (i=0; i<5; i++){
+        std::cerr << std::endl;
+        for(int j=0; j< 20; j++)
+            std::cerr << input_images[i*230*230*3 + j] << " ";
+    }
 }

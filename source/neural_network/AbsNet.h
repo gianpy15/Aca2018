@@ -37,6 +37,8 @@ public:
     AbsNet * addPool2D(const int *kernel_size, Pooling pooling_algorithm, Padding padding);
     AbsNet * addFC(int outputs);
     AbsNet * addFC(int outputs, membase * weights, membase * bias);
+    AbsNet * addRelu();
+    std::vector< std::vector<int> > top_n_output(int n);
     void flatten();
     // virtual static AbsNet *createNet(const memory::dims &input_size)=0;
     void run_net();
