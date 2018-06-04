@@ -30,6 +30,7 @@ namespace IOTest{
             switch (layerDescriptor->layerType) {
                 case CONV:
                 case DENSE:
+                case PREDICTIONS:
                     EXPECT_TRUE(layerDescriptor->weightsDimensions);
                     EXPECT_TRUE(layerDescriptor->biasesDimensions);
                     EXPECT_TRUE(layerDescriptor->weights);

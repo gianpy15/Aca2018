@@ -121,7 +121,7 @@ LayerDescriptor *H5io::get_next() {
         else if (layer_name.find("fc") != std::string::npos)
             type = LayerType::DENSE;
         else if (layer_name.find("predictions") != std::string::npos)
-            type = LayerType::DENSE;
+            type = LayerType::PREDICTIONS;
         else type = LayerType::INPUT;
 
         layerDescriptor = this->get_layer(layer_name, type);

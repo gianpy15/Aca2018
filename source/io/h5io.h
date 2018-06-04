@@ -22,7 +22,8 @@ enum LayerType {
     CONV,
     POOL,
     DENSE,
-    FLATTEN
+    FLATTEN,
+    PREDICTIONS
 };
 
 
