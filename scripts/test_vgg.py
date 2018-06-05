@@ -19,4 +19,4 @@ images = np.array(images)
 preds = model.predict(images)
 
 for pred in preds:
-    print('Predicted:', decode_predictions(np.expand_dims(pred, axis=0), top=3)[0])
+    print('Predicted:', np.argmax(pred))

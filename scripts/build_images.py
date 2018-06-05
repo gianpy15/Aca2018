@@ -49,7 +49,6 @@ def read_h5(name):
 
 images_path = '../resources/ILSVRC2012/'
 images_test_path = '../resources/test_imgs/'
-number_of_images = ''
 labels_path = '../resources/ILSVRC2012_validation_ground_truth.txt'
 samples = 5
 labels_from_vgg = True
