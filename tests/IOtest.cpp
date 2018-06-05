@@ -69,7 +69,7 @@ namespace IOTest{
         int *images_shape;
         images = dataSet->get_images();
         EXPECT_TRUE(images != nullptr);
-        images_shape = dataSet->get_images_shape();
+        images_shape = reinterpret_cast<int *>(dataSet->get_images_shape());
         EXPECT_TRUE(images_shape != nullptr);
 
         int dim = 1;
@@ -80,7 +80,7 @@ namespace IOTest{
 
         labels = dataSet->get_labels();
         EXPECT_TRUE(labels != nullptr);
-        labels_shape = dataSet->get_labels_shape();
+        labels_shape = reinterpret_cast<int *>(dataSet->get_labels_shape());
         EXPECT_TRUE(labels_shape != nullptr);
 
         dim = 1;
