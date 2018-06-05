@@ -93,7 +93,6 @@ membase * DataPipelineManager::allocate_dst(memory::primitive_desc &dst_desc, fl
         ret = new membase(dst_desc, nullptr, scale);
         last_output = ret;
         allocated_memory.push_back(ret);
-        std::cout << "First allocation! (dest)\n";
         return ret;
     }
     // if there are previously allocated objects just use them
@@ -104,7 +103,6 @@ membase * DataPipelineManager::allocate_dst(memory::primitive_desc &dst_desc, fl
             // if one is okay, keep it
             auto pd = memobj->memref->get_primitive_desc();
             ret = new membase(pd, memobj->memref->get_data_handle(), scale);
-            std::cout << "Second choice match! (dest)\n";
             break;
         }
     }
@@ -112,7 +110,6 @@ membase * DataPipelineManager::allocate_dst(memory::primitive_desc &dst_desc, fl
     // if no existing compatible memory has already been allocated, allocate some fresh memory
     if (ret == nullptr) {
         ret = new membase(dst_desc, nullptr, scale);
-        std::cout << "No match! (dest)\n";
     }
 
     last_output = ret;
@@ -127,7 +124,6 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
         src_mem = new membase(src_desc, nullptr, scale);
         last_output = src_mem;
         allocated_memory.push_back(src_mem);
-        std::cout << "First allocation!\n";
         return src_mem;
     }
     // if there are previously allocated objects...
@@ -137,10 +133,8 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
         auto lpd = last_output->memref->get_primitive_desc();
         auto spd = src_desc;
         if (last_output->memref->get_primitive_desc() == src_desc && last_output->scale == scale){
-            std::cout << "Perfect match!\n";
             return last_output;
         }
-        std::cout << "Unperfect match!\n";
         // otherwhise just rescale and reformat on itself
         src_mem = new membase(src_desc, last_output->memref->get_data_handle(), scale);
     }
@@ -151,7 +145,6 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
                 // if one is okay, keep it and issue a reorder (to move data at least)
                 auto pd = memobj->memref->get_primitive_desc();
                 src_mem = new membase(pd, memobj->memref->get_data_handle(), scale);
-                std::cout << "Second choice match!\n";
                 break;
             }
         }
@@ -160,16 +153,15 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
     // if no existing compatible memory has already been allocated, allocate some fresh memory
     if (src_mem == nullptr) {
         src_mem = new membase(src_desc, nullptr, scale);
-        std::cout << "No match!\n";
     }
 
     primitive_attr attr;
     attr.set_int_output_round_mode(round_mode::round_nearest);
     attr.set_output_scales(0, {scale / last_output->scale});
-    log("Dst");
-    log(src_mem);
-    log("Src");
-    log(last_output);
+    //log("Dst");
+    //log(src_mem);
+    //log("Src");
+    //log(last_output);
     auto reorder_pd = reorder::primitive_desc(last_output->memref->get_primitive_desc(),
                                               src_desc, attr);
     primitive * re = new reorder(reorder_pd, *last_output->memref, *src_mem->memref);

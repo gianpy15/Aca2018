@@ -178,11 +178,17 @@ void AbsNet::fromFile(const std::string filename){
  */
 
 AbsNet::AbsNet(const memory::dims &input_size): last_output_shape(input_size) {
-    dataPipelineManager = new DataPipelineManager(inference_ops);
-    parametersManager = new ParametersManager(setup_ops);
-    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nhwc }, cpu_engine};
-    last_output = dataPipelineManager->allocate_src(memdesc);
-    input_mem = last_output;
+    try {
+        dataPipelineManager = new DataPipelineManager(inference_ops);
+        parametersManager = new ParametersManager(setup_ops);
+        memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
+        last_output = dataPipelineManager->allocate_src(memdesc);
+        input_mem = last_output;
+    } catch (error &e) {
+        std::cerr << "status: " << error_message(e.status) << std::endl;
+        std::cerr << "message: " << e.message << std::endl;
+        throw;
+    }
 }
 
 

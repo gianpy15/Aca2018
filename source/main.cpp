@@ -50,6 +50,7 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
+    /*
     DataSetIO dataset("images");
     Logger logger("log");
 
@@ -82,5 +83,6 @@ int main() {
         for(int j=0; j< 20; j++)
             std::cerr << input_images[i*230*230*3 + j] << " ";
     }
-
+    */
+    benchMachine(5, 3, 100, 10);
 }
