@@ -38,8 +38,7 @@ membase* ParametersManager::allocate_parameters(memory::primitive_desc& dst_desc
 
     auto reorder_pd = reorder::primitive_desc(src_data->memref->get_primitive_desc(),
             dst_desc, dst_attr);
-    primitive * ret = new reorder(reorder_pd, *src_data->memref, *dst_mem->memref);
-    setup_ops.push_back(*ret);
+    setup_ops.push_back(std::move(reorder(reorder_pd, *src_data->memref, *dst_mem->memref)));
     return dst_mem;
 }
 
@@ -130,8 +129,6 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
     // first check the last output: if it has the right size, no new allocation is needed
     if (last_output->memref->get_primitive_desc().get_size() == src_desc.get_size()){
         // if it is perfect, we won't even move data: it will be the source!
-        auto lpd = last_output->memref->get_primitive_desc();
-        auto spd = src_desc;
         if (last_output->memref->get_primitive_desc() == src_desc && last_output->scale == scale){
             return last_output;
         }
@@ -164,8 +161,7 @@ membase * DataPipelineManager::allocate_src(memory::primitive_desc &src_desc, fl
     //log(last_output);
     auto reorder_pd = reorder::primitive_desc(last_output->memref->get_primitive_desc(),
                                               src_desc, attr);
-    primitive * re = new reorder(reorder_pd, *last_output->memref, *src_mem->memref);
-    inference_ops.push_back(*re);
+    inference_ops.push_back(std::move(reorder(reorder_pd, *last_output->memref, *src_mem->memref)));
     last_output = src_mem;
     allocated_memory.push_back(src_mem);
     return src_mem;
@@ -180,5 +176,6 @@ size_t DataPipelineManager::memory_usage(){
             passed_handles.push_back(memobj->memref->get_data_handle());
         }
     }
+    passed_handles.clear();
     return acc;
 }

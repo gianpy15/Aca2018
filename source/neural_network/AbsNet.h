@@ -93,8 +93,8 @@ protected:
                               const memory::dims& pool_strides,
                               const memory::dims& pool_padding,
                               algorithm pool_algorithm)= 0;
-    virtual void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                          const memory::dims& fc_src_tz, membase * weights, membase * bias)=0;
+    void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
+                  const memory::dims& fc_src_tz, membase * weights, membase * bias);
 
     void createFC(const memory::dims& fc_dst_tz,
                   const memory::dims& fc_weights_tz,

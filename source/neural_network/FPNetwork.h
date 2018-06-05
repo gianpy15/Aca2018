@@ -25,11 +25,6 @@ private:
 
     void createPool2D(const memory::dims& pool_dst_tz, const memory::dims& pool_kernel, const memory::dims& pool_strides,
                       const memory::dims& pool_padding, algorithm pool_algorithm) override;
-
-    void createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
-                  const memory::dims& fc_src_tz, membase* user_weights, membase* user_bias) override;
-
-
 };
 
 

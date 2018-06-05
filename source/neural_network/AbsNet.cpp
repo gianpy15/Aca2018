@@ -23,8 +23,8 @@ double AbsNet::run_net(int times) {
             }
             auto end_time = std::chrono::high_resolution_clock::now();
             double ret = (double)(end_time-start_time).count()/1e+6;
-            std::cout << "Runs: " << times << std::endl
-                      << "Time elapsed(ms): " << ret << std::endl;
+            //std::cout << "Runs: " << times << std::endl
+            //          << "Time elapsed(ms): " << ret << std::endl;
             return ret;
         } catch (error &e) {
             std::cerr << "status: " << error_message(e.status) << std::endl;
@@ -402,6 +402,30 @@ void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weig
     createFC(fc_dst_tz, fc_weights_tz, fc_bias_tz, fc_src_tz, weights_memory, bias_memory);
 }
 
+void AbsNet::createFC(const memory::dims& fc_dst_tz, const memory::dims& fc_weights_tz, const memory::dims& fc_bias_tz,
+                         const memory::dims& fc_src_tz, membase* fc_user_weights_memory, membase* fc_user_bias_memory) {
+
+    auto fc_bias_md = memory::desc({ fc_bias_tz }, memory::data_type::f32, memory::format::any);
+    auto fc_weights_md = memory::desc({ fc_weights_tz }, memory::data_type::f32, memory::format::any);
+    auto fc_dst_md = memory::desc({ fc_dst_tz }, memory::data_type::f32, memory::format::any);
+    auto fc_src_md = memory::desc({fc_src_tz}, memory::data_type::f32, memory::format::any);
+
+    auto fc_desc = inner_product_forward::desc(prop_kind::forward_inference, fc_src_md, fc_weights_md, fc_bias_md, fc_dst_md);
+    auto fc_prim_desc = inner_product_forward::primitive_desc(fc_desc, cpu_engine);
+    auto tmp = fc_prim_desc.weights_primitive_desc();
+    auto fc_weights_memory = parametersManager->allocate_parameters(tmp, fc_user_weights_memory);
+    tmp = fc_prim_desc.src_primitive_desc();
+    auto fc_src_memory = dataPipelineManager->allocate_src(tmp);
+    tmp = fc_prim_desc.bias_primitive_desc();
+    auto fc_bias_memory = parametersManager->allocate_parameters(tmp, fc_user_bias_memory);
+    tmp = fc_prim_desc.dst_primitive_desc();
+    auto fc_dst_memory = dataPipelineManager->allocate_dst(tmp);
+    inference_ops.push_back(std::move(inner_product_forward(fc_prim_desc, *fc_src_memory->memref,
+                                                            *fc_weights_memory->memref, *fc_bias_memory->memref, *fc_dst_memory->memref)));
+    last_output = fc_dst_memory;
+    last_output_shape = fc_dst_tz;
+}
+
 
 
 /* #################################################################################
@@ -482,7 +506,7 @@ AbsNet* AbsNet::addRelu(){
                                             last_output->memref->get_primitive_desc().desc(), negative2_slope);
     auto relu2_prim_desc
             = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
-    inference_ops.push_back(eltwise_forward(relu2_prim_desc, *last_output->memref, *last_output->memref));
+    inference_ops.push_back(std::move(eltwise_forward(relu2_prim_desc, *last_output->memref, *last_output->memref)));
 
 }
 
