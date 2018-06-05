@@ -4,6 +4,7 @@
 
 #include "logging.h"
 #include <iostream>
+#include <fstream>
 #include <mkldnn_types.h>
 
 bool shallLog = true;
@@ -91,4 +92,23 @@ std::string error_message(int status){
         default:
             return "Unknown status code " + status;
     }
+}
+
+
+std::ofstream& openStream(std::string& path){
+    auto os = new std::ofstream("../resources/" + path + ".csv", std::ios::app);
+    return *os;
+}
+
+Logger::Logger(std::string&& path): logfile(openStream(path)), lineBegin(true){}
+
+void Logger::endLine() {
+    logfile << std::endl;
+    lineBegin = true;
+}
+
+Logger::~Logger() {
+    if (!lineBegin)
+        endLine();
+    logfile.close();
 }

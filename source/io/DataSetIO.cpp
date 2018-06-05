@@ -7,9 +7,9 @@
 
 DataSetIO::DataSetIO(string file_name) {
     string path = "../resources/" + file_name + ".h5";
-    this->H5_NAME = H5std_string(path);
+    H5_NAME = H5std_string(path);
     try {
-        this->dataSet = new H5File(this->H5_NAME, H5F_ACC_RDONLY);
+        dataSet = new H5File(this->H5_NAME, H5F_ACC_RDONLY);
     } catch (H5::FileIException) {
         cerr << "unable to open file at " << path << endl;
         exit(-1);
@@ -32,7 +32,7 @@ int *DataSetIO::get_labels() {
     auto labelsVector = new int[fullDimension];
     DataSpace weightsMemory(rank, dims);
     labels.read(labelsVector, PredType::NATIVE_FLOAT, weightsMemory, labelsDataSpace);
-    this->labels_shape = (int *)dims;
+    labels_shape = dims;
 
     return labelsVector;
 }
@@ -53,21 +53,21 @@ float *DataSetIO::get_images() {
     auto imagesVector = new float[fullDimension];
     DataSpace weightsMemory(rank, dims);
     images.read(imagesVector, PredType::NATIVE_FLOAT, weightsMemory, imagesDataSpace);
-    this->images_shape = (int *)dims;
+    images_shape = dims;
 
     return imagesVector;
 }
 
-int *DataSetIO::get_images_shape() {
-    return this->images_shape;
+unsigned long long *DataSetIO::get_images_shape() {
+    return images_shape;
 }
 
-int *DataSetIO::get_labels_shape() {
-    return this->labels_shape;
+unsigned long long *DataSetIO::get_labels_shape() {
+    return labels_shape;
 }
 
 DataSetIO::~DataSetIO() {
-    delete this->labels_shape;
-    delete this->images_shape;
-    delete this->dataSet;
+    delete labels_shape;
+    delete images_shape;
+    delete dataSet;
 }

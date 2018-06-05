@@ -3,6 +3,8 @@
 #include "neural_network/INTNetwork.h"
 #include "monitoring/mem_monitoring.h"
 #include "logging/logging.h"
+#include "io/DataSetIO.h"
+#include "measurements.h"
 
 const int kernel_5x5[] = {5, 5};
 const int kernel_3x3[] = {3, 3};
@@ -48,62 +50,37 @@ AbsNet * test_intNet(int repetitions) {
 }
 
 int main() {
-    /*
-    size_t init_mem = getCurrentMemUsage();
-    std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
-    std::cout << "Testing FP network" << std::endl;
-    auto fpnet = test_net(&FPNetwork::createNet, 1);
-    size_t after_fpnet = getCurrentMemUsage();
-    std::cout << "Memory for fp32 net (tot): " << fpnet->total_memory_usage()/1000000 << "MB" << std::endl;
-    std::cout << "Memory for fp32 net (par): " << fpnet->parameters_memory_usage()/1000 << "KB" << std::endl;
-    std::cout << "Memory for fp32 net (pro): " << (after_fpnet-init_mem)/1000 << "MB" << std::endl;
-    std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
-    delete fpnet;
-    std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
-    after_fpnet = getCurrentMemUsage();
+    DataSetIO dataset("images");
+    Logger logger("log");
 
-    std::cout << "Testing Int network" << std::endl;
-    auto intnet = test_net(&INTNetwork::createNet, 1);
-    size_t after_intnet = getCurrentMemUsage();
-    std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
+    auto input_images = dataset.get_images();
+    auto output_labels = dataset.get_labels();
+    auto out_shape = dataset.get_labels_shape();
+    auto in_shape = dataset.get_images_shape();
 
-    std::cout << "Memory for int8 net (tot): " << intnet->total_memory_usage()/1000000 << "MB" << std::endl;
-    std::cout << "Memory for int8 net (par): " << intnet->parameters_memory_usage()/1000 << "KB" << std::endl;
-    std::cout << "Memory for int8 net (pro): " << (after_intnet-after_fpnet)/1000 << "MB" << std::endl;
-    std::cout << "Memory debug msg: " << getCurrentMemUsage()/1000 << "MB" << std::endl;
+    auto net_in_shape = {(int)in_shape[0], (int)in_shape[3], (int)in_shape[1], (int)in_shape[2]};
 
-    //AbsNet *net = test_fpNet(1);
-   // AbsNet *net2 = test_intNet(1);
+    FPNetwork vgg16(net_in_shape);
+    vgg16.fromFile("vgg");
+    vgg16.set_input_data(input_images);
+    measureAndLog(logger, &vgg16);
+    auto output = vgg16.top_n_output(10);
 
+    std::cout << "Results:" << std::endl;
+    int i=0;
+    for (auto im: output) {
+        std::cout << "Im " << i << ": ";
+        for (auto pred: im)
+            std::cout << pred << " ";
+        std::cout << std::endl;
+        i++;
+    }
 
-    memory::dims input = {1, 3, 227, 227};
-    auto net = new FPNetwork(input);
-    net->addConv2D(32, kernel_3x3, no_stride, Padding::VALID);
-    net->addFC(64);
-    net->addFC(16);
-    net->setup_net();
-    net->run_net();
-    */
+    std::cerr << "Images";
+    for (i=0; i<5; i++){
+        std::cerr << std::endl;
+        for(int j=0; j< 20; j++)
+            std::cerr << input_images[i*230*230*3 + j] << " ";
+    }
 
-    AbsNet *n = new INTNetwork({1, 3, 230, 230});
-    size_t init_mem = getCurrentMemUsage();
-    std::cout << "Net created..." << std::endl;
-    n->fromFile("vgg");
-    std::cout << "Net loaded..." << std::endl;
-    size_t net_loaded_mem = getCurrentMemUsage();
-    log("Memory consumption (KB): ", n->total_memory_usage()/1000);
-    log("Param memory (KB): ", n->parameters_memory_usage()/1000);
-    log("Memory allocation (KB): ", net_loaded_mem-init_mem);
-    n->setup_net();
-    std::cout << "Net ready..." << std::endl;
-    size_t net_setup_mem = getCurrentMemUsage();
-    log("Memory consumption (KB): ", n->total_memory_usage()/1000);
-    log("Param memory (KB): ", n->parameters_memory_usage()/1000);
-    log("Memory allocation (KB): ", net_setup_mem-init_mem);
-    n->run_net();
-    std::cout << "Net run successfully!" << std::endl;
-    size_t net_run_mem = getCurrentMemUsage();
-    log("Memory consumption (KB): ", n->total_memory_usage()/1000);
-    log("Param memory (KB): ", n->parameters_memory_usage()/1000);
-    log("Memory allocation (KB): ", net_run_mem-init_mem);
 }

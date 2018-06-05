@@ -5,6 +5,7 @@
 #include "AbsNet.h"
 #include "../io/h5io.h"
 #include "../logging/logging.h"
+#include <climits>
 
 
 
@@ -13,7 +14,7 @@
  * #################################################################################
  */
 
-void AbsNet::run_net(int times) {
+double AbsNet::run_net(int times) {
     if (!inference_ops.empty()) {
         try {
             auto start_time = std::chrono::high_resolution_clock::now();
@@ -21,8 +22,10 @@ void AbsNet::run_net(int times) {
                 stream(stream::kind::eager).submit(inference_ops).wait();
             }
             auto end_time = std::chrono::high_resolution_clock::now();
+            double ret = (double)(end_time-start_time).count()/1e+6;
             std::cout << "Runs: " << times << std::endl
-                      << "Time elapsed(ms): " << (double)(end_time-start_time).count()/1e+6 << std::endl;
+                      << "Time elapsed(ms): " << ret << std::endl;
+            return ret;
         } catch (error &e) {
             std::cerr << "status: " << error_message(e.status) << std::endl;
             std::cerr << "message: " << e.message << std::endl;
@@ -31,8 +34,8 @@ void AbsNet::run_net(int times) {
     }
 }
 
-void AbsNet::run_net(){
-    run_net(1);
+double AbsNet::run_net(){
+    return run_net(1);
 }
 
 
@@ -42,7 +45,8 @@ void AbsNet::run_net(){
  * #################################################################################
  */
 
-void AbsNet::setup_net() {
+double AbsNet::setup_net() {
+    auto start_time = std::chrono::high_resolution_clock::now();
     if (!setup_ops.empty()) {
         try {
             stream(stream::kind::eager).submit(setup_ops).wait();
@@ -55,6 +59,8 @@ void AbsNet::setup_net() {
 
     parametersManager->setup_done();
 
+    auto end_time = std::chrono::high_resolution_clock::now();
+    return (double)(end_time-start_time).count()/1e+6;
 }
 
 
@@ -65,9 +71,6 @@ void AbsNet::setup_net() {
  */
 
 void AbsNet::fromFile(const std::string filename){
-    dataPipelineManager = new DataPipelineManager(inference_ops);
-    parametersManager = new ParametersManager(setup_ops);
-
     H5io parser(filename);
 
     memory::dims tmp_dims {0, 0, 0, 0};
@@ -80,9 +83,11 @@ void AbsNet::fromFile(const std::string filename){
     int i, j;
     int ksize[] {0, 0};
     int default_strides[] {1, 1};
+    bool need_relu = true;
     memory::primitive_desc tmp_memdesc;
     membase * tmp_weights;
     membase * tmp_biases;
+    memory::primitive_desc shuffled_conv_outputs;
 
     while(parser.has_next()){
         tmp_layer = parser.get_next();
@@ -129,6 +134,8 @@ void AbsNet::fromFile(const std::string filename){
                 break;
             case LayerType::DENSE:
                 log("Dense");
+                need_relu = true;
+            case LayerType::PREDICTIONS:
 
                 //for (i=0; i<2; i++)
                 //    tmp_dwdims[i] = (int)tmp_layer->weightsDimensions[i];
@@ -141,10 +148,15 @@ void AbsNet::fromFile(const std::string filename){
                 tmp_biases = new membase(tmp_bdims, memory::format::x, memory::data_type::f32, tmp_layer->biases);
 
                 addFC(tmp_dwdims[0], tmp_weights, tmp_biases);
+                if (need_relu)
+                    addRelu();
                 layers_num++;
+                need_relu = false;
                 break;
             case LayerType::FLATTEN:
                 log("Flatten");
+                shuffled_conv_outputs = {{last_output_shape, memory::data_type::f32, memory::format::nhwc}, cpu_engine};
+                dataPipelineManager->allocate_src(shuffled_conv_outputs);
                 flatten();
                 layers_num++;
                 break;
@@ -168,7 +180,7 @@ void AbsNet::fromFile(const std::string filename){
 AbsNet::AbsNet(const memory::dims &input_size): last_output_shape(input_size) {
     dataPipelineManager = new DataPipelineManager(inference_ops);
     parametersManager = new ParametersManager(setup_ops);
-    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nchw }, cpu_engine};
+    memory::primitive_desc memdesc ={ { { input_size }, memory::data_type::f32, memory::format::nhwc }, cpu_engine};
     last_output = dataPipelineManager->allocate_src(memdesc);
     input_mem = last_output;
 }
@@ -397,7 +409,7 @@ void AbsNet::flatten(){
         channels *= (last_output_shape)[i];
     int batch_size = (last_output_shape)[0];
 
-    last_output = new membase({batch_size, channels}, memory::format::oi,
+    last_output = new membase({batch_size, channels}, memory::format::nc,
                               last_output->dtype(), last_output->memref->get_data_handle(), last_output->scale);
     last_output_shape = {batch_size, channels};
     // need just a little hack now...
@@ -412,6 +424,60 @@ void AbsNet::set_input_data(float *dataHandle) {
 float* AbsNet::getOutput() {
     void* outRef = last_output->memref->get_data_handle();
     return (float*) outRef;
+}
+
+std::vector< std::vector<int> > AbsNet::top_n_output(int n){
+    int channels = last_output_shape[1];
+    int batch_size = last_output_shape[0];
+    auto out = std::vector< std::vector<int> >((unsigned long)batch_size);
+
+    float tmpf;
+    int tmpidx;
+    float tmptop_val[n];
+    int tmptop_idx[n];
+    int i;
+    int curr_idx;
+    float curr_value;
+    int imidx, ch;
+
+    for (imidx=0; imidx < batch_size; imidx++){
+        for (i=0; i<n; i++){
+            tmptop_idx[i] = -1;
+            tmptop_val[i] = -std::numeric_limits<float>::infinity();
+        }
+        for (ch=0; ch < channels; ch++){
+            curr_idx = ch;
+            curr_value = ((float*)last_output->memref->get_data_handle())[imidx * channels + ch];
+            std::cerr << curr_value << "(" << curr_idx << ") ";
+            for (i = 0; i<n; i++){
+                if(curr_value > tmptop_val[i]){
+                    tmpf = tmptop_val[i];
+                    tmpidx = tmptop_idx[i];
+                    tmptop_val[i] = curr_value;
+                    tmptop_idx[i] = curr_idx;
+                    curr_value = tmpf;
+                    curr_idx = tmpidx;
+                }
+            }
+        }
+        std::cerr << std::endl;
+        for (i=0; i<n; i++)
+            out[imidx].push_back(tmptop_idx[i]);
+    }
+
+    return out;
+}
+
+AbsNet* AbsNet::addRelu(){
+    const float negative2_slope = 1.0f;
+
+    auto relu2_desc = eltwise_forward::desc(prop_kind::forward_inference,
+                                            algorithm::eltwise_relu,
+                                            last_output->memref->get_primitive_desc().desc(), negative2_slope);
+    auto relu2_prim_desc
+            = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
+    inference_ops.push_back(eltwise_forward(relu2_prim_desc, *last_output->memref, *last_output->memref));
+
 }
 
 
