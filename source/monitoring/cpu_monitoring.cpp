@@ -8,26 +8,12 @@
 #include <cstring>
 
 int cpu_cores(){
-    size_t result = 0;
-    std::ifstream cpuinfo("/proc/cpuinfo");
-    char line[512];
-
-    int idx;
-    int maxidx = -1;
-    if (cpuinfo.is_open()) {
-        while (cpuinfo.getline(line, 512)){
-            if (std::strncmp(line, "processor", 9) == 0) {
-                idx = atoi(line+11);
-                if (idx > maxidx)
-                    maxidx = idx;
-            }
-        }
-        cpuinfo.close();
-    } else {
-        std::cerr << "Unable to open /proc/cpuinfo" << std::endl;
-        exit(-1);
-    }
-    return maxidx + 1;
+    char line[16];
+    if(system("nproc >/tmp/nprocout") != 0)
+        return -1;
+    std::ifstream nprocout("/tmp/nprocout");
+    nprocout >> line;
+    return atoi(line);
 }
 
 std::string cpu_type(){
