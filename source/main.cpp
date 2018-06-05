@@ -84,5 +84,5 @@ int main() {
             std::cerr << input_images[i*230*230*3 + j] << " ";
     }
     */
-    benchMachine(2, 1, 30, 10);
+    benchMachine(5, 0, 1, 1);
 }

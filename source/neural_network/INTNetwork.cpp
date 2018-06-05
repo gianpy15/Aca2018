@@ -18,10 +18,10 @@ void INTNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dim
                               const memory::dims& conv_strides, const memory::dims& conv_dst_tz, const memory::dims& padding,
                               membase* conv_user_weights_memory, membase* conv_user_bias_memory) {
 
-    float src_scale = 2.f;
-    float weights_scale = 2.f;
-    float bias_scale = 4.f;
-    float dst_scale = 4.f;
+    float src_scale = last_output->scale;
+    float weights_scale = 1.f;
+    float bias_scale = weights_scale * src_scale;
+    float dst_scale = weights_scale * src_scale;
 
     /* create memory descriptors for convolution data w/ no specified format */
     auto conv_src_md = memory::desc(
