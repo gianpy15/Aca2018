@@ -11,4 +11,5 @@ resources/*
 !resources/*.sh
 !resources/*.txt
 !resources/test_imgs/
+!resources/logs/
 resources/vgg.txt

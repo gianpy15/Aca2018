@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
+import csv
 
 
 class Plotter:
@@ -49,8 +50,12 @@ class Plotter:
         self.__figure += 1
         self.__hist_data.append([x_point, y_point, self.__figure, hist_name, False])
 
-    def add_from_csv(self, path):
-        pass
+    def add_from_csv(self, path, x_value: int, value_to_plot: int):
+        if type(path) == list:
+            for p in path:
+                self.__add_graph_from_csv(p, x_value, value_to_plot)
+        else:
+            self.__add_graph_from_csv(path, x_value, value_to_plot)
 
     def show(self, separate=True):
         """
@@ -96,6 +101,24 @@ class Plotter:
                     plt.gca().add_artist(legend)
                     i += 1
 
+    def __add_graph_from_csv(self, path, x_value: int, value_to_plot: int):
+        with open(path, 'r') as csv_file:
+            reader = csv.reader(csv_file)
+            fp_data = [[], []]
+            int_data = [[], []]
+            name = 'time' if 6 <= value_to_plot <= 7 else 'memory[B]'
+            for row in reader:
+                if row[2] == 'fp32':
+                    fp_data[0].append(row[x_value])
+                    fp_data[1].append(row[value_to_plot])
+                else:
+                    int_data[0].append(row[x_value])
+                    int_data[1].append(row[value_to_plot])
+            print(np.shape(fp_data))
+            self.add_curve(fp_data[0], fp_data[1], curve_name='fp32_' + name)
+            self.add_curve(int_data[0], int_data[1], curve_name='int8_' + name)
+            self.__figure += 1
+
     def __show_hists(self):
         for hist in self.__hist_data:
             data = self.__get_hist_values(hist[0], hist[1])
@@ -127,10 +150,11 @@ class Plotter:
 
 
 if __name__ == '__main__':
-    graph = Plotter('label_x', 'label_y')
-    graph.add_curve([1, 2, 3], [1, 2, 3], curve_name='c1')
-    graph.add_curve([1, 2, 3], [2, 4, 6], curve_name='c2')
-    graph.add_curve([1, 2, 3, 4], [1, 4, 9, 16], curve_name='quadratic', new_figure=True)
-    graph.add_histogram(['ciao', 'b'], [4, 6])
+    graph = Plotter('number of convolutions', 'time')
+    # graph.add_curve([1, 2, 3], [1, 2, 3], curve_name='c1')
+    # graph.add_curve([1, 2, 3], [2, 4, 6], curve_name='c2')
+    # graph.add_curve([1, 2, 3, 4], [1, 4, 9, 16], curve_name='quadratic', new_figure=True)
+    # graph.add_histogram(['ciao', 'b'], [4, 6])
+    graph.add_from_csv('../resources/logs/i7_20conv_30bs.csv', 3, 6)
     graph.show(False)
     pass
