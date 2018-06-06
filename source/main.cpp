@@ -84,5 +84,7 @@ int main() {
             std::cerr << input_images[i*230*230*3 + j] << " ";
     }
     */
-    benchMachine(20, 0, 30, 30, 8, 1);
+
+    //benchMachine(20, 0, 30, 30, 64, 1);
+    runVGG16s();
 }

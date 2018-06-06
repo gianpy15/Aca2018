@@ -10,4 +10,5 @@
 
 void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep, int maxchannels, int chstep);
 void measureAndLog(Logger& logger, AbsNet* net);
+void runVGG16s();
 #endif //ACA2018_MEASUREMENTS_H
