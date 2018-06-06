@@ -8,6 +8,6 @@
 #include "logging/logging.h"
 #include "neural_network/AbsNet.h"
 
-void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep);
+void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep, int maxchannels, int chstep);
 void measureAndLog(Logger& logger, AbsNet* net);
 #endif //ACA2018_MEASUREMENTS_H

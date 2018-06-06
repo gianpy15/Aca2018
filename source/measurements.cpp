@@ -11,7 +11,7 @@
 #include <ctime>
 
 
-void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep){
+void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep, int maxchannels, int chstep) {
     std::cout << "CPU: " << cpu_type() << std::endl;
     std::cout << "cores: " << cpu_cores() << std::endl;
 
@@ -22,75 +22,77 @@ void benchMachine(int maxconv, int maxdense, int maxbsize, int bsizestep){
     int nostrides[] = {1, 1};
     int pool_kernel[] = {2, 2};
 
-    int convnum, densenum, batchsize, i;
+    int convnum, densenum, batchsize, chnum, i;
     Logger logger("log");
 
     for (convnum = 1; convnum <= maxconv; convnum++){
-        for (densenum = 0; densenum <= maxdense; densenum++) {
-            for (batchsize = bsizestep; batchsize <= maxbsize; batchsize += bsizestep){
-                std::cout << "Running test of fp32 net with "
-                          << convnum << " convs, "
-                          << densenum << " fcs, "
-                          << batchsize << " batchsize" << std::endl;
-                auto net = new FPNetwork({batchsize, 3, 230, 230});
-                for (i = 0; i<convnum; i++){
-                    //if (i % 3 == 2)
-                    //    net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
-                    net->addConv2D(64, kernel_3x3, nostrides, Padding::SAME);
-                }
-                if (densenum > 0) {
-                    //net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
-                    net->flatten();
-                }
-                for (i = 0; i<densenum; i++){
-                    net->addFC(32);
-                    net->addRelu();
-                }
+        for (chnum = chstep; chnum <= maxchannels; chnum += chstep)
+            for (densenum = 0; densenum <= maxdense; densenum++) {
+                for (batchsize = bsizestep; batchsize <= maxbsize; batchsize += bsizestep){
+                    std::cout << "Running test of fp32 net with "
+                              << convnum << " convs, "
+                              << densenum << " fcs, "
+                              << batchsize << " batchsize" << std::endl;
+                    auto net = new FPNetwork({batchsize, 3, 230, 230});
+                    for (i = 0; i<convnum; i++){
+                        //if (i % 3 == 2)
+                        //    net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
+                        net->addConv2D(chnum, kernel_3x3, nostrides, Padding::SAME);
+                    }
+                    if (densenum > 0) {
+                        //net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
+                        net->flatten();
+                    }
+                    for (i = 0; i<densenum; i++){
+                        net->addFC(32);
+                        net->addRelu();
+                    }
 
-                logger.logValue(cpuname);
-                logger.logValue(cores);
-                logger.logValue("fp32");
-                logger.logValue(convnum);
-                logger.logValue(densenum);
-                logger.logValue(batchsize);
-                measureAndLog(logger, net);
-                delete net;
+                    logger.logValue(cpuname);
+                    logger.logValue(cores);
+                    logger.logValue("fp32");
+                    logger.logValue(convnum);
+                    logger.logValue(chnum);
+                    logger.logValue(batchsize);
+                    measureAndLog(logger, net);
+                    delete net;
+                }
             }
-        }
     }
 
     for (convnum = 1; convnum <= maxconv; convnum++){
-        for (densenum = 0; densenum <= maxdense; densenum++) {
-            for (batchsize = bsizestep; batchsize <= maxbsize; batchsize += bsizestep){
-                std::cout << "Running test of quantized net with "
-                          << convnum << " convs, "
-                          << densenum << " fcs, "
-                          << batchsize << " batchsize" << std::endl;
-                auto net = new INTNetwork({batchsize, 3, 230, 230});
-                for (i = 0; i<convnum; i++){
-                    //if (i % 3 == 2)
-                    //    net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
-                    net->addConv2D(64, kernel_3x3, nostrides, Padding::SAME);
-                }
-                if (densenum > 0) {
-                    //net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
-                    net->flatten();
-                }
-                for (i = 0; i<densenum; i++){
-                    net->addFC(32);
-                    net->addRelu();
-                }
+        for (chnum = chstep; chnum <= maxchannels; chnum += chstep)
+            for (densenum = 0; densenum <= maxdense; densenum++) {
+                for (batchsize = bsizestep; batchsize <= maxbsize; batchsize += bsizestep){
+                    std::cout << "Running test of quantized net with "
+                              << convnum << " convs, "
+                              << densenum << " fcs, "
+                              << batchsize << " batchsize" << std::endl;
+                    auto net = new INTNetwork({batchsize, 3, 230, 230});
+                    for (i = 0; i<convnum; i++){
+                        //if (i % 3 == 2)
+                        //    net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
+                        net->addConv2D(chnum, kernel_3x3, nostrides, Padding::SAME);
+                    }
+                    if (densenum > 0) {
+                        //net->addPool2D(pool_kernel, Pooling::MAX, Padding::SAME);
+                        net->flatten();
+                    }
+                    for (i = 0; i<densenum; i++){
+                        net->addFC(32);
+                        net->addRelu();
+                    }
 
-                logger.logValue(cpuname);
-                logger.logValue(cores);
-                logger.logValue("int8");
-                logger.logValue(convnum);
-                logger.logValue(densenum);
-                logger.logValue(batchsize);
-                measureAndLog(logger, net);
-                delete net;
+                    logger.logValue(cpuname);
+                    logger.logValue(cores);
+                    logger.logValue("int8");
+                    logger.logValue(convnum);
+                    logger.logValue(chnum);
+                    logger.logValue(batchsize);
+                    measureAndLog(logger, net);
+                    delete net;
+                }
             }
-        }
     }
 }
 
