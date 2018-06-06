@@ -118,23 +118,22 @@ void measureAndLog(Logger& logger, AbsNet* net){
 }
 
 void runVGG16s(){
-    DataSetIO dataset("images");
-
-    auto input_images = dataset.get_images();
-    auto in_shape = dataset.get_images_shape();
-
-    auto net_in_shape = {(int)in_shape[0], (int)in_shape[3], (int)in_shape[1], (int)in_shape[2]};
+    auto net_in_shape = {30, 3, 230, 230};
 
     auto separator = " ######################## ";
+    auto interesting_part_start_delimiter = "===";
+    auto interesting_part_end_delimiter = "---";
+    auto fpiden = "fp";
+    auto quantiden = "int";
     std::cout << separator << "RUNNING VGG16 FP32 VERSION" << separator << std::endl;
     FPNetwork *vgg16f32 = new FPNetwork(net_in_shape);
     vgg16f32->fromFile("vgg");
     std::cout << separator << "VGG16 FP32 VERSION NETWORK LOEADED" << separator << std::endl;
-    vgg16f32->set_input_data(input_images);
-    std::cout << separator << "VGG16 FP32 VERSION INPUT LOADED" << separator << std::endl;
     vgg16f32->setup_net();
     std::cout << separator << "VGG16 FP32 VERSION SETUP DONE" << separator << std::endl;
+    std::cout << interesting_part_start_delimiter << fpiden << std::endl;
     vgg16f32->run_net();
+    std::cout << interesting_part_end_delimiter << std::endl;
     std::cout << separator << "VGG16 FP32 VERSION RUN COMPLETED" << separator << std::endl;
 
     delete vgg16f32;
@@ -143,9 +142,9 @@ void runVGG16s(){
     INTNetwork *vgg16int = new INTNetwork(net_in_shape);
     vgg16int->fromFile("vgg");
     std::cout << separator << "VGG16 QUANTIZED VERSION NETWORK LOEADED" << separator << std::endl;
-    vgg16int->set_input_data(input_images);
-    std::cout << separator << "VGG16 QUANTIZED VERSION INPUT LOADED" << separator << std::endl;
-    vgg16int->setup_net();
+    std::cout << interesting_part_start_delimiter << quantiden << std::endl;
+    vgg16int->run_net();
+    std::cout << interesting_part_end_delimiter << std::endl;
     std::cout << separator << "VGG16 QUANTIZED VERSION SETUP DONE" << separator << std::endl;
     vgg16int->run_net();
     std::cout << separator << "VGG16 QUANTIZED VERSION RUN COMPLETED" << separator << std::endl;
