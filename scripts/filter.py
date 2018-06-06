@@ -2,12 +2,19 @@ import sys
 
 if __name__ == '__main__':
     log = sys.argv[1]
+    opt = ''
+    if len(sys.argv) > 2:
+        opt = sys.argv[2]
 
     for line in log.split('\n'):
         elems = line.split(',')
         if len(elems) >= 4:
-            out1 = elems[2] + ' '*(15-len(elems[2]))
-            out2 = elems[3] + ' '*(15-len(elems[3]))
-            out3 = elems[-1]
-            print("%s%s%s" % (out1, out2, out3))
+            if opt == '-h':
+                out1 = elems[2] + ' '*(15-len(elems[2]))
+                out2 = elems[3] + ' '*(15-len(elems[3]))
+                out3 = elems[-1]
+                print("%s%s%s" % (out1, out2, out3))
+            else:
+                print("%s,%s,%s" % (elems[2], elems[3], elems[-1]))
+
 
