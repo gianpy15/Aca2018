@@ -12,4 +12,9 @@ resources/*
 !resources/*.txt
 !resources/test_imgs/
 !resources/logs/
+!resources/presentation/
 resources/vgg.txt
+resources/presentation/*.pdf
+resources/presentation/*.mov
+resources/presentation/*.ppsx
+
