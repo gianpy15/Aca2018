@@ -36,12 +36,21 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     log(conv_dst_tz, 4);
     */
     /* build up the description of the convolution */
+
+    primitive_attr conv_attr;
+    const float ops_scale = 1.f;
+    const float ops_alpha = 0.f; // relu negative slope
+    const float ops_beta = 0.f;
+    post_ops ops;
+    ops.append_eltwise(ops_scale, algorithm::eltwise_relu, ops_alpha, ops_beta);
+    conv_attr.set_post_ops(ops);
+
     auto conv_desc = convolution_forward::desc(
             prop_kind::forward_inference, convolution_direct, conv_src_md,
             conv_weights_md, conv_bias_md, conv_dst_md, conv_strides,
             padding, padding, padding_kind::zero);
     auto conv_prim_desc
-            = convolution_forward::primitive_desc(conv_desc, cpu_engine);
+            = convolution_forward::primitive_desc(conv_desc, conv_attr, cpu_engine);
 
     /* allocate the necessary memory and issue reorders */
     auto tmp = conv_prim_desc.src_primitive_desc();
@@ -58,7 +67,7 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
                                       *conv_weights_memory->memref, *conv_bias_memory->memref,
                                       *conv_dst_memory->memref)));
 
-
+    /*
     const float negative2_slope = 1.0f;
 
     auto relu2_desc = eltwise_forward::desc(prop_kind::forward_inference,
@@ -67,7 +76,7 @@ void FPNetwork::createConv2D(const memory::dims& conv_src_tz, const memory::dims
     auto relu2_prim_desc
             = eltwise_forward::primitive_desc(relu2_desc, cpu_engine);
     inference_ops.push_back(std::move(eltwise_forward(relu2_prim_desc, *conv_dst_memory->memref, *conv_dst_memory->memref)));
-
+    */
     last_output = conv_dst_memory;
     last_output_shape = conv_dst_tz;
 }
